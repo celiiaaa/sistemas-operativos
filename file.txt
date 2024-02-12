@@ -1,0 +1,1 @@
+Repositorio con todas las prácticas de la asignatura Sistemas Operativos.
