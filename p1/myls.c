@@ -45,10 +45,7 @@ int main(int argc, char *argv[]) {
 
 	/* Leer el contenido del directorio e imprimirlo */
 	while((entrada = readdir(dir)) != NULL) {
-		/* PREGUNTAR SI PUEDO HACER ESTO */
-		if(strcmp(entrada->d_name, ".")!=0 && strcmp(entrada->d_name, "..")!=0) {
-			printf("%s\n", entrada->d_name);
-		}
+		printf("%s\n", entrada->d_name);
 	}
 
 	/* Cerrar el directorio */
