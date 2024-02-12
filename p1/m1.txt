@@ -1,3 +1,5 @@
+CASOS DE PRUEBAS
+
 1. MYWC
 caso 0:
 input: ./mywc p1_tests/f1.txt
