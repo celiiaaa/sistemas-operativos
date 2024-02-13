@@ -21,7 +21,8 @@ int main(int argc, char *argv[]) {
 
 	/* Leer el contenido del fichero de byte en byte */
 	char caracter;
-	int n_bytes = 0, n_palabras = 0;
+	int n_bytes = 0;
+	int n_palabras = 0;
 	int n_lineas = 0;
 	int es_palabra = 0;
 	while(read(fd, &caracter, 1) > 0) {
@@ -44,13 +45,14 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		/* En otro caso, es caracter */
+		/* En otro caso, es caracter de una palabra */
 		else {
 			es_palabra = 1;
 		}
 
 	}
 
+	/* Es la última palabra */
 	if (es_palabra) {
 		n_palabras++;
 	}
@@ -66,4 +68,3 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
-
