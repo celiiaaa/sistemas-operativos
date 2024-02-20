@@ -17,12 +17,9 @@ int main(int argc, char *argv[]) {
 	/* En caso de no especificar ningun directorio */
 	if(argc == 1) {
 		if(getcwd(path_dir, sizeof(path_dir)) == NULL) {
-			printf("Error al obtener el path del directorio actual");
+			printf("Error. Directory not found\n");
 			return -1;
 		}
-
-		/* Abrir el directorio */
-		dir = opendir(path_dir);
 	}
 
 	/* En caso de especificar un directorio */
@@ -33,13 +30,16 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
-		/* Abrir el directorio */
-		dir = opendir(argv[1]);
+		/* Copiar la ruta del fichero */
+		strcpy(path_dir, argv[1]);
 	}
+
+	/* Abrir el directorio */
+	dir = opendir(path_dir);
 
 	/* En caso de no encontrar el directorio */
 	if(dir == NULL) {
-		printf("Error. Directory not found\n");
+		printf("Error. Directory not open\n");
 		return -1;
 	}
 
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
 	/* Cerrar el directorio */
 	if(closedir(dir) == -1) {
-		printf("Error al cerrar el directorio");
+		printf("Error. Directory not close\n");
 		return -1;
 	}
 

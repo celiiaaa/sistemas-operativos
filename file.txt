@@ -1,1 +1,3 @@
 Repositorio con todas las prácticas de la asignatura Sistemas Operativos.
+En la terminal de la maquina virtual de ubuntu, en la carpeta en donde se encuentra el zip:
+scp ./ssoo_p1_471948.zip a0471948@guernika.lab.inf.uc3m.es:

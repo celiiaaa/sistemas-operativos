@@ -8,8 +8,8 @@
 
 int main(int argc, char *argv[]) {
 	/* Comprobar que se pasen el número de parámetros correctos */
-	if(argc < 3) {
-		printf("Error. Too few arguments\n");
+	if(argc != 3) {
+		printf("Error. Number of arguments not valid\n");
 		return -1;
 	}
 
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 	/* Leer todas las entradas */
 	struct dirent *entrada;
 	int encontrado = 0;
-	while((entrada = readdir(dir)) != NULL) {
+	while(((entrada = readdir(dir)) != NULL) && (!encontrado)) {
 		/* Comprobar que sea el fichero deseado */
 		if(strcmp(entrada->d_name, argv[2]) == 0) {
 			printf("File %s is in directory %s\n", argv[2], argv[1]);
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
 	/* Cerrar el directorio */
 	if(closedir(dir) == -1) {
-		printf("Error al cerrar el directorio");
+		printf("Error. Directory not close\n");
 		return -1;
 	}
 

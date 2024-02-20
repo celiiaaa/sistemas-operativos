@@ -7,8 +7,8 @@
 
 int main(int argc, char *argv[]) {
 	/* Comprobar que se pasen el número de parámetros correctos */
-	if(argc < 2) {
-		printf("Error. Too few arguments\n");
+	if(argc != 2) {
+		printf("Error. Number of arguments not valid\n");
 		return -1;
 	}
 
@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
 	int n_palabras = 0;
 	int n_lineas = 0;
 	int es_palabra = 0;
+
 	while(read(fd, &caracter, 1) > 0) {
 		n_bytes++;
 
