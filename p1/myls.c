@@ -1,8 +1,8 @@
-//P1-SSOO-23/24
+/* P1-SSOO-23/24 */
 
-#include <stdio.h>		// Header file for system call printf
-#include <unistd.h>		// Header file for system call gtcwd
-#include <sys/types.h>	// Header file for system calls opendir, readdir y closedir
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h> 
 #include <dirent.h>
 #include <string.h>
 

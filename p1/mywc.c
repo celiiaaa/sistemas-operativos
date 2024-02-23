@@ -1,4 +1,4 @@
-//P1-SSOO-23/24
+/* P1-SSOO-23/24 */
 
 #include <stdio.h>
 #include <fcntl.h>
