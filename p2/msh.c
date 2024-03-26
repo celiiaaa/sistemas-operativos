@@ -22,8 +22,7 @@ char filev[3][64];
 /* to store the execvp second parameter */
 char *argv_execvp[8];
 
-void siginthandler(int param)
-{
+void siginthandler(int param) {
 	printf("****  Exiting MSH **** \n");
 	//signal(SIGINT, siginthandler);
 	exit(0);
@@ -31,8 +30,7 @@ void siginthandler(int param)
 
 /* myhistory */
 
-struct command
-{
+struct command {
   // Store the number of commands in argvv
   int num_commands;
   // Store the number of arguments of each command
@@ -46,21 +44,17 @@ struct command
 };
 
 int history_size = 20;
-struct command * history;
+struct command *history;
 int head = 0;
 int tail = 0;
 int n_elem = 0;
 
-void free_command(struct command *cmd)
-{
-    if((*cmd).argvv != NULL)
-    {
+void free_command(struct command *cmd) {
+    if((*cmd).argvv != NULL) {
         char **argv;
-        for (; (*cmd).argvv && *(*cmd).argvv; (*cmd).argvv++)
-        {
-            for (argv = *(*cmd).argvv; argv && *argv; argv++)
-            {
-                if(*argv){
+        for (; (*cmd).argvv && *(*cmd).argvv; (*cmd).argvv++) {
+            for (argv = *(*cmd).argvv; argv && *argv; argv++) {
+                if(*argv) {
                     free(*argv);
                     *argv = NULL;
                 }
@@ -70,20 +64,17 @@ void free_command(struct command *cmd)
     free((*cmd).args);
 }
 
-void store_command(char ***argvv, char filev[3][64], int in_background, struct command* cmd)
-{
+void store_command(char ***argvv, char filev[3][64], int in_background, struct command* cmd) {
     int num_commands = 0;
-    while(argvv[num_commands] != NULL){
+    while (argvv[num_commands] != NULL) {
         num_commands++;
     }
 
-    for(int f=0;f < 3; f++)
-    {
-        if(strcmp(filev[f], "0") != 0)
-        {
+    for (int f=0;f < 3; f++) {
+        if (strcmp(filev[f], "0") != 0) {
             strcpy((*cmd).filev[f], filev[f]);
         }
-        else{
+        else {
             strcpy((*cmd).filev[f], "0");
         }
     }
@@ -93,17 +84,15 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
     (*cmd).argvv = (char ***) calloc((num_commands) ,sizeof(char **));
     (*cmd).args = (int*) calloc(num_commands , sizeof(int));
 
-    for( int i = 0; i < num_commands; i++)
-    {
+    for( int i = 0; i < num_commands; i++) {
         int args= 0;
-        while( argvv[i][args] != NULL ){
+        while (argvv[i][args] != NULL) {
             args++;
         }
         (*cmd).args[i] = args;
         (*cmd).argvv[i] = (char **) calloc((args+1) ,sizeof(char *));
         int j;
-        for (j=0; j<args; j++)
-        {
+        for (j=0; j<args; j++) {
             (*cmd).argvv[i][j] = (char *)calloc(strlen(argvv[i][j]),sizeof(char));
             strcpy((*cmd).argvv[i][j], argvv[i][j] );
         }
@@ -120,20 +109,20 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
  */
 void getCompleteCommand(char*** argvv, int num_command) {
 	//reset first
-	for(int j = 0; j < 8; j++)
+	for(int j = 0; j < 8; j++) {
 		argv_execvp[j] = NULL;
-
+    }
 	int i = 0;
-	for ( i = 0; argvv[num_command][i] != NULL; i++)
+	for ( i = 0; argvv[num_command][i] != NULL; i++) {
 		argv_execvp[i] = argvv[num_command][i];
+    }
 }
 
 
 /**
  * Main sheell  Loop  
  */
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
 	/**** Do not delete this code.****/
 	int end = 0; 
 	int executed_cmd_lines = -1;
@@ -160,32 +149,29 @@ int main(int argc, char* argv[])
 	history = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
 
-	while (1) 
-	{
+	while (1) {
 		int status = 0;
 		int command_counter = 0;
 		int in_background = 0;
 		signal(SIGINT, siginthandler);
 
-		if (run_history)
-    {
-        run_history=0;
-    }
-    else{
-        // Prompt 
-        write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
+		if (run_history) {
+            run_history=0;
+        } else {
+            // Prompt 
+            write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
 
-        // Get command
-        //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
-        executed_cmd_lines++;
-        if( end != 0 && executed_cmd_lines < end) {
-            command_counter = read_command_correction(&argvv, filev, &in_background, cmd_lines[executed_cmd_lines]);
+            // Get command
+            //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
+            executed_cmd_lines++;
+            if (end != 0 && executed_cmd_lines < end) {
+                command_counter = read_command_correction(&argvv, filev, &in_background, cmd_lines[executed_cmd_lines]);
+            } else if (end != 0 && executed_cmd_lines == end) {
+                return 0;
+            } else {
+                command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
+            }
         }
-        else if( end != 0 && executed_cmd_lines == end)
-            return 0;
-        else
-            command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
-    }
 		//************************************************************************************************
 
 
@@ -193,11 +179,121 @@ int main(int argc, char* argv[])
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
+			} else {
+                // Obtener todos los comandos
+                for (int i=0; i<command_counter; i++) {
+                    // Print command
+				    print_command(argvv, filev, in_background);
+                    // Obtener el comando completo
+                    getCompleteCommand(argvv, i);
+                    // Almacenar el comando en el historial
+                    // store_command(argvv, filev, in_background, &history[tail]);
+                }
 			}
-			else {
-				// Print command
-				print_command(argvv, filev, in_background);
-			}
+
+            if (strcmp("mycalc", argv_execvp[0]) == 0) {
+                // Operacion mycalc.
+                mycalc();
+            } else if (strcmp("myhist", argv_execvp[0]) == 0) {
+                // Operacion myhist.
+                // myhist(history, head, tail, n_elem);
+                myhist();
+            } else if (command_counter == 1) {
+                // Mandato simple
+                int status;
+                pid_t pid = fork();
+                switch(pid) {
+                    case -1:    // Error
+                        perror("Error. Fork failed\n");
+                        exit(-1);
+                    case 0:     // Hijo
+                        
+                        /* Redirecciones */
+                        // Fichero de entrada
+                        if (strcmp(filev[0], "0") != 0) {
+                            if ((close(0)) < 0) {
+                                perror("Error. Close failed\n");
+                                exit(-1);
+                            }
+                            if ((open(filev[0], O_RDWR, 0644)) < 0) {
+                                perror("Error. Open failed\n");
+                                exit(-1);
+                            }
+                        }
+                        // Fichero de salida
+                        if (strcmp(filev[1], "0") != 0) {
+                            if ((close(1)) < 0) {
+                                perror("Error. Close failed\n");
+                                exit(-1);
+                            }
+                            if ((open(filev[1], O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0) {
+                                perror("Error. Open failed\n");
+                                exit(-1);
+                            }
+                        }
+                        // Fichero de error
+                        if (strcmp(filev[2], "0") != 0) {
+                            if ((close(2)) < 0) {
+                                perror("Error. Close failed\n");
+                                exit(-1);
+                            }
+                            if ((open(filev[2], O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0) {
+                                perror("Error. Open failed\n");
+                                exit(-1);
+                            }
+                        }
+
+                        /* Ejecucion del comando */
+                        if (execvp(argv_execvp[0], argv_execvp) < 0) {
+                            perror("Error. Execvp failed\n");
+                            exit(-1);
+                        }
+
+                        printf("Fin proceso hijo.\n");
+                        break;
+                    default:    // Padre.
+                        // ...
+                        if (wait(&status) == -1) {
+                            perror("Error. Wait failed\n");
+                            exit(-1);
+                        }
+                        break;
+                }
+            } else {
+                // Mandato compuesto
+                int status2;
+                pid_t pid2;
+                int fd[2];
+                int fdin;
+
+                // Duplicar el fichero de entrada
+                if ((fdin = dup(0)) < 0) {
+                    perror("Error. Dup failed\n");
+                    exit(-1);
+                }
+
+                // Ejecutar cada uno de los mandatos
+                for (int i=0; i<command_counter; i++) {
+                    // Crear pipe
+                    if (i < command_counter - 1) {
+                        if (pipe(fd) < 0) {
+                            perror("Error. Pipe failed\n");
+                            exit(-1);
+                        }
+                    }
+
+                    // Ejecutar el mandato
+                    pid2 = fork();
+                    switch(pid2) {
+                        case -1:    // Error
+                            perror("Error. Fork failed\n");
+                            exit(-1);
+                        case 0:     // Hijo
+                            // Redirecciones
+                            
+                    }
+                }
+            }
 		}
 	}
 	
