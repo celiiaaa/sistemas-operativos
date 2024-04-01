@@ -1,0 +1,40 @@
+
+----MYCALC----
+1. 
+mycalc
+[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>
+
+2.
+mycalc 1 add 1 > salida.txt
+[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>
+
+3.
+mycalc 4 div uno
+[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>
+
+4.
+mycalc 2 3 mul
+[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>
+
+5.
+mycalc 3 suma 2
+[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>
+
+6.
+mycalc 3 add 4
+[OK] 3 + 4 = 7; Acc 7
+mycalc -4 add 2
+[OK] -4 + 2 = -2; Acc 5
+mycalc -10 add 2
+[OK] -10 + 2 = -8; Acc -3
+mycalc 5 add -2
+[OK] 5 + -2 = 3; Acc 0
+
+7.
+mycalc 2 mul 3
+[OK] 2 * 3 = 6
+
+8.
+mycalc 4 div 2
+[OK] 4 / 2 = 2; Resto 0
+

@@ -113,8 +113,16 @@ void getCompleteCommand(char*** argvv, int num_command) {
 		argv_execvp[j] = NULL;
     }
 	int i = 0;
-	for ( i = 0; argvv[num_command][i] != NULL; i++) {
+	for (i = 0; argvv[num_command][i] != NULL; i++) {
 		argv_execvp[i] = argvv[num_command][i];
+    }
+}
+
+
+void writeMsg(char *msg, int fd) {
+    if ((write(fd, msg, strlen(msg))) < 0) {
+        perror("Error. Write error_msg failed.\n");
+        exit(-1);
     }
 }
 
@@ -192,60 +200,102 @@ int main(int argc, char* argv[]) {
 			}
 
             if (strcmp("mycalc", argv_execvp[0]) == 0) {
-                // Operacion mycalc.
-                mycalc();
+                // Comprobar sintaxis
+                char *m_error = "[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n";
+                if (strcmp(filev[0], "0")!=0 || strcmp(filev[1], "0")!=0 || strcmp(filev[2], "0")!=0 || in_background!=0 || command_counter!=1) {
+                    writeMsg(m_error, 1);
+                } else if (argv_execvp[1]==NULL || argv_execvp[2]==NULL || argv_execvp[3]==NULL) {
+                    writeMsg(m_error, 1);
+                } else if (strcmp("add", argv_execvp[2])!=0 && strcmp("mul", argv_execvp[2])!=0 && strcmp("div", argv_execvp[2])!=0) {
+                    writeMsg(m_error, 1);
+                } else if ((strcmp(argv_execvp[1], "0")!=0 && atoi(argv_execvp[1])==0) || (strcmp(argv_execvp[3], "0")!=0 && atoi(argv_execvp[3])==0)) {
+                    writeMsg(m_error, 1);
+                } else {
+                    char result[100];
+                    int op1 = atoi(argv_execvp[1]);
+                    int op2 = atoi(argv_execvp[3]);
+                    if (strcmp("add", argv_execvp[2])==0) {
+                        char *str_acc = getenv("Acc");
+                        int acc = atoi(str_acc);
+                        int suma = op1 + op2;
+                        acc = acc + suma;
+                        char new_acc[10];
+                        sprintf(new_acc, "%d", acc);
+                        setenv("Acc", new_acc, 1);
+                        snprintf(result, 100, "[OK] %d + %d = %d; Acc %s\n", op1, op2, suma, getenv("Acc"));
+                    } else if (strcmp("mul", argv_execvp[2])==0) {
+                        int multi = op1 * op2;
+                        sprintf(result, "[OK] %d * %d = %d\n", op1, op2, multi);
+                    } else if (strcmp("div", argv_execvp[2])==0) {
+                        // REVISAR
+                        if (op2 == 0) {
+                            perror("Error. Zero div.\n");
+                        } else if (op2 > op1) {
+                            perror("Error. Inf dividend > divisor.\n");
+                        } else {
+                            int div = op1 / op2;
+                            int rest = op1 % op2;
+                            sprintf(result, "[OK] %d / %d = %d; Resto %d\n", op1, op2, div, rest);
+                        }
+                    } 
+                    writeMsg(result, 2);
+                }
+
+
             } else if (strcmp("myhist", argv_execvp[0]) == 0) {
-                // Operacion myhist.
+                // Comprobar sintaxis
+                if (strcmp(filev[0], "0")!=0 || strcmp(filev[1], "0")!=0 || strcmp(filev[2], "0")!=0 || in_background!=0 || command_counter!=1) {
+                    perror("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
+                    return -1;
+                }
                 // myhist(history, head, tail, n_elem);
-                myhist();
-            } else if (command_counter == 1) {
+            }/* else if (command_counter == 1) {
                 // Mandato simple
                 int status;
                 pid_t pid = fork();
                 switch(pid) {
                     case -1:    // Error
-                        perror("Error. Fork failed\n");
+                        perror("Error. Fork failed.\n");
                         exit(-1);
                     case 0:     // Hijo
                         
-                        /* Redirecciones */
                         // Fichero de entrada
                         if (strcmp(filev[0], "0") != 0) {
                             if ((close(0)) < 0) {
-                                perror("Error. Close failed\n");
+                                perror("Error. Close failed.\n");
                                 exit(-1);
                             }
                             if ((open(filev[0], O_RDWR, 0644)) < 0) {
-                                perror("Error. Open failed\n");
+                                perror("Error. Open failed.\n");
                                 exit(-1);
                             }
                         }
                         // Fichero de salida
                         if (strcmp(filev[1], "0") != 0) {
                             if ((close(1)) < 0) {
-                                perror("Error. Close failed\n");
+                                perror("Error. Close failed.\n");
                                 exit(-1);
                             }
                             if ((open(filev[1], O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0) {
-                                perror("Error. Open failed\n");
+                                perror("Error. Open failed.\n");
                                 exit(-1);
                             }
                         }
                         // Fichero de error
                         if (strcmp(filev[2], "0") != 0) {
                             if ((close(2)) < 0) {
-                                perror("Error. Close failed\n");
+                                perror("Error. Close failed.\n");
                                 exit(-1);
                             }
                             if ((open(filev[2], O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0) {
-                                perror("Error. Open failed\n");
+                                perror("Error. Open failed.\n");
                                 exit(-1);
                             }
                         }
 
-                        /* Ejecucion del comando */
+                        // Ejecucion del comando
                         if (execvp(argv_execvp[0], argv_execvp) < 0) {
-                            perror("Error. Execvp failed\n");
+                            perror("Error. Execvp failed.\n");
                             exit(-1);
                         }
 
@@ -254,7 +304,7 @@ int main(int argc, char* argv[]) {
                     default:    // Padre.
                         // ...
                         if (wait(&status) == -1) {
-                            perror("Error. Wait failed\n");
+                            perror("Error. Wait failed.\n");
                             exit(-1);
                         }
                         break;
@@ -268,7 +318,7 @@ int main(int argc, char* argv[]) {
 
                 // Duplicar el fichero de entrada
                 if ((fdin = dup(0)) < 0) {
-                    perror("Error. Dup failed\n");
+                    perror("Error. Dup failed.\n");
                     exit(-1);
                 }
 
@@ -277,7 +327,7 @@ int main(int argc, char* argv[]) {
                     // Crear pipe
                     if (i < command_counter - 1) {
                         if (pipe(fd) < 0) {
-                            perror("Error. Pipe failed\n");
+                            perror("Error. Pipe failed.\n");
                             exit(-1);
                         }
                     }
@@ -286,15 +336,19 @@ int main(int argc, char* argv[]) {
                     pid2 = fork();
                     switch(pid2) {
                         case -1:    // Error
-                            perror("Error. Fork failed\n");
+                            perror("Error. Fork failed.\n");
                             exit(-1);
                         case 0:     // Hijo
                             // Redirecciones
                             
                     }
                 }
-            }
-		}
+            }*/
+
+		} else if (command_counter < 0) {
+            perror("Error. Read command failed.\n");
+            return -1;
+        }
 	}
 	
 	return 0;
