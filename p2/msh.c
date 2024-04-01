@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
                         char new_acc[10];
                         sprintf(new_acc, "%d", acc);
                         setenv("Acc", new_acc, 1);
-                        snprintf(result, 100, "[OK] %d + %d = %d; Acc %s\n", op1, op2, suma, getenv("Acc"));
+                        sprintf(result, "[OK] %d + %d = %d; Acc %s\n", op1, op2, suma, getenv("Acc"));
                     } else if (strcmp("mul", argv_execvp[2])==0) {
                         int multi = op1 * op2;
                         sprintf(result, "[OK] %d * %d = %d\n", op1, op2, multi);
