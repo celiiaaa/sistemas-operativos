@@ -1,0 +1,4 @@
+   - Se tienen que almancenar los mandatos internos?
+   - Si un mandato contiene un error, se debe almacenar?
+   - la linea 138: setenv("Acc", "0", 1); se tiene que hacer?
+   - 

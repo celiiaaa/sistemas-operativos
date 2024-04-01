@@ -15,7 +15,6 @@
 
 #define MAX_COMMANDS 8
 
-
 /* files in case of redirection */ 
 char filev[3][64];
 
@@ -23,7 +22,7 @@ char filev[3][64];
 char *argv_execvp[8];
 
 void siginthandler(int param) {
-	printf("****  Exiting MSH **** \n");
+	printf("**** Exiting MSH **** \n");
 	//signal(SIGINT, siginthandler);
 	exit(0);
 }
@@ -136,6 +135,7 @@ int main(int argc, char* argv[]) {
 	int executed_cmd_lines = -1;
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
+    setenv("Acc", "0", 1);
 
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
@@ -195,7 +195,14 @@ int main(int argc, char* argv[]) {
                     // Obtener el comando completo
                     getCompleteCommand(argvv, i);
                     // Almacenar el comando en el historial
-                    // store_command(argvv, filev, in_background, &history[tail]);
+                    if (n_elem < history_size) {
+                        n_elem++;
+                    } else {
+                        free_command(&history[head]);
+                        head = (head + 1) % history_size;
+                    }
+                    store_command(argvv, filev, in_background, &history[tail]);
+                    tail = (tail + 1) % history_size;
                 }
 			}
 
@@ -211,10 +218,12 @@ int main(int argc, char* argv[]) {
                 } else if ((strcmp(argv_execvp[1], "0")!=0 && atoi(argv_execvp[1])==0) || (strcmp(argv_execvp[3], "0")!=0 && atoi(argv_execvp[3])==0)) {
                     writeMsg(m_error, 1);
                 } else {
+                    // Operar
                     char result[100];
                     int op1 = atoi(argv_execvp[1]);
                     int op2 = atoi(argv_execvp[3]);
                     if (strcmp("add", argv_execvp[2])==0) {
+                        // Suma y acc
                         char *str_acc = getenv("Acc");
                         int acc = atoi(str_acc);
                         int suma = op1 + op2;
@@ -224,9 +233,11 @@ int main(int argc, char* argv[]) {
                         setenv("Acc", new_acc, 1);
                         sprintf(result, "[OK] %d + %d = %d; Acc %s\n", op1, op2, suma, getenv("Acc"));
                     } else if (strcmp("mul", argv_execvp[2])==0) {
+                        // Multiplicación
                         int multi = op1 * op2;
                         sprintf(result, "[OK] %d * %d = %d\n", op1, op2, multi);
                     } else if (strcmp("div", argv_execvp[2])==0) {
+                        // División
                         // REVISAR
                         if (op2 == 0) {
                             perror("Error. Zero div.\n");
@@ -237,19 +248,33 @@ int main(int argc, char* argv[]) {
                             int rest = op1 % op2;
                             sprintf(result, "[OK] %d / %d = %d; Resto %d\n", op1, op2, div, rest);
                         }
-                    } 
+                    }
                     writeMsg(result, 2);
                 }
 
-
             } else if (strcmp("myhist", argv_execvp[0]) == 0) {
                 // Comprobar sintaxis
+                char *m_error = "[ERROR] La estructura del comando es myhist <N*>\n";
                 if (strcmp(filev[0], "0")!=0 || strcmp(filev[1], "0")!=0 || strcmp(filev[2], "0")!=0 || in_background!=0 || command_counter!=1) {
-                    perror("[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n");
-                    return -1;
+                    writeMsg(m_error, 1);
+                } else if (argv_execvp[1] != NULL && ((strcmp(argv_execvp[1], "0")!=0 && atoi(argv_execvp[1])==0) || (atoi(argv_execvp[1])<0) || (atoi(argv_execvp[1])>20))) {
+                    writeMsg(m_error, 1);
+                } else {
+                    // Ejecutar el comando
+                    if (argv_execvp[1] == NULL) {
+                        // print_20_comandos_hist
+                        int i = head;
+                        while (i != tail) {
+                            printf("%d %s\n", i, *history[i].argvv[0]);
+                            i = (i + 1) % history_size;
+                        }
+                    } else {
+                        printf("Exec\n");
+                        // exec N_command
+                    }
                 }
-                // myhist(history, head, tail, n_elem);
-            }/* else if (command_counter == 1) {
+                
+            } /*else if (command_counter == 1) {
                 // Mandato simple
                 int status;
                 pid_t pid = fork();
