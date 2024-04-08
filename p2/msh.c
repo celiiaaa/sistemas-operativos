@@ -253,12 +253,48 @@ int main(int argc, char* argv[]) {
                     writeMsg(m_error, 1);
                 } else {
                     // Ejecutar el comando
+                    int n = atoi(argv_execvp[1]);
                     if (argv_execvp[1] == NULL) {
                         // print_20_comandos_hist
+
+                        // se debe escribir en la salida estandar de error
+
                         int i = head;
                         while (i != tail) {
-                            if(history[i].argvv[0] != NULL) {
-                            printf("%d ", i);
+                            if (history[i].argvv[0] != NULL) {
+                                printf("%d ", i);
+                                for(int j = 0; j < history[i].num_commands; j++) {
+                                    for(int k = 0; k < history[i].args[j]; k++) {
+                                        printf("%s ", history[i].argvv[j][k]);
+                                    }
+                                    if(j < history[i].num_commands - 1) {
+                                        printf("| ");
+                                    }
+                                }
+                                if(strcmp(history[i].filev[0], "0") != 0) {
+                                    printf("< %s ", history[i].filev[0]);
+                                }
+                                if(strcmp(history[i].filev[1], "0") != 0) {
+                                    printf("> %s ", history[i].filev[1]);
+                                }
+                                if(history[i].in_background) {
+                                    printf("&");
+                                }
+                                printf("\n");
+                            }
+                            i = (i + 1) % history_size;
+                        }
+                    } else if (n < 0 || n >= 20) {
+                        char *msg = "[ERROR] Comando no encontrado";
+                        writeMsg(msg, 1);
+                    } else {
+                        char *msg;
+                        // exec N_command
+                        // Comprobar que exista ese comando
+                        int i = head;
+                        if (i == n) {
+                            // Ejecutar este comando
+                            printf("Ejecutar comando: ");
                             for(int j = 0; j < history[i].num_commands; j++) {
                                 for(int k = 0; k < history[i].args[j]; k++) {
                                     printf("%s ", history[i].argvv[j][k]);
@@ -277,12 +313,12 @@ int main(int argc, char* argv[]) {
                                 printf("&");
                             }
                             printf("\n");
-                        }
+                            break;
+                        } else if (i == tail) {
+                            break;
+                        } else if (i != n) {
                             i = (i + 1) % history_size;
                         }
-                    } else {
-                        printf("Exec\n");
-                        // exec N_command
                     }
                 }
                 
