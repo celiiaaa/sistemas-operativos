@@ -30,16 +30,16 @@ void siginthandler(int param) {
 /* myhistory */
 
 struct command {
-  // Store the number of commands in argvv
-  int num_commands;
-  // Store the number of arguments of each command
-  int *args;
-  // Store the commands
-  char ***argvv;
-  // Store the I/O redirection
-  char filev[3][64];
-  // Store if the command is executed in background or foreground
-  int in_background;
+    // Store the number of commands in argvv
+    int num_commands;
+    // Store the number of arguments of each command
+    int *args;
+    // Store the commands
+    char ***argvv;
+    // Store the I/O redirection
+    char filev[3][64];
+    // Store if the command is executed in background or foreground
+    int in_background;
 };
 
 int history_size = 20;
@@ -80,8 +80,8 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
 
     (*cmd).in_background = in_background;
     (*cmd).num_commands = num_commands-1;
-    (*cmd).argvv = (char ***) calloc((num_commands) ,sizeof(char **));
-    (*cmd).args = (int*) calloc(num_commands , sizeof(int));
+    (*cmd).argvv = (char ***) calloc((num_commands), sizeof(char **));
+    (*cmd).args = (int*) calloc(num_commands, sizeof(int));
 
     for( int i = 0; i < num_commands; i++) {
         int args= 0;
@@ -89,10 +89,10 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
             args++;
         }
         (*cmd).args[i] = args;
-        (*cmd).argvv[i] = (char **) calloc((args+1) ,sizeof(char *));
+        (*cmd).argvv[i] = (char **) calloc((args+1), sizeof(char *));
         int j;
         for (j=0; j<args; j++) {
-            (*cmd).argvv[i][j] = (char *)calloc(strlen(argvv[i][j]),sizeof(char));
+            (*cmd).argvv[i][j] = (char *) calloc(strlen(argvv[i][j]), sizeof(char));
             strcpy((*cmd).argvv[i][j], argvv[i][j] );
         }
     }
@@ -118,6 +118,7 @@ void getCompleteCommand(char*** argvv, int num_command) {
 }
 
 
+/* Función auxiliar para escribir mensajes */
 void writeMsg(char *msg, int fd) {
     if ((write(fd, msg, strlen(msg))) < 0) {
         perror("Error. Write error_msg failed.\n");
@@ -135,7 +136,9 @@ int main(int argc, char* argv[]) {
 	int executed_cmd_lines = -1;
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
-    setenv("Acc", "0", 1);
+
+    setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
+    int i_cmd = 0;
 
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
@@ -187,24 +190,12 @@ int main(int argc, char* argv[]) {
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
-			} else {
-                // Obtener todos los comandos
-                for (int i=0; i<command_counter; i++) {
-                    // Print command
-				    print_command(argvv, filev, in_background);
-                    // Obtener el comando completo
-                    getCompleteCommand(argvv, i);
-                    // Almacenar el comando en el historial
-                    if (n_elem < history_size) {
-                        n_elem++;
-                    } else {
-                        free_command(&history[head]);
-                        head = (head + 1) % history_size;
-                    }
-                    store_command(argvv, filev, in_background, &history[tail]);
-                    tail = (tail + 1) % history_size;
-                }
-			}
+                break;
+			} 
+            
+            i_cmd = 0;
+            printf("I es: %d\n", i_cmd);
+            getCompleteCommand(argvv, i_cmd);
 
             if (strcmp("mycalc", argv_execvp[0]) == 0) {
                 // Comprobar sintaxis
@@ -253,6 +244,7 @@ int main(int argc, char* argv[]) {
                 }
 
             } else if (strcmp("myhist", argv_execvp[0]) == 0) {
+                printf("ejecutar myhist\n");
                 // Comprobar sintaxis
                 char *m_error = "[ERROR] La estructura del comando es myhist <N*>\n";
                 if (strcmp(filev[0], "0")!=0 || strcmp(filev[1], "0")!=0 || strcmp(filev[2], "0")!=0 || in_background!=0 || command_counter!=1) {
@@ -265,7 +257,27 @@ int main(int argc, char* argv[]) {
                         // print_20_comandos_hist
                         int i = head;
                         while (i != tail) {
-                            printf("%d %s\n", i, *history[i].argvv[0]);
+                            if(history[i].argvv[0] != NULL) {
+                            printf("%d ", i);
+                            for(int j = 0; j < history[i].num_commands; j++) {
+                                for(int k = 0; k < history[i].args[j]; k++) {
+                                    printf("%s ", history[i].argvv[j][k]);
+                                }
+                                if(j < history[i].num_commands - 1) {
+                                    printf("| ");
+                                }
+                            }
+                            if(strcmp(history[i].filev[0], "0") != 0) {
+                                printf("< %s ", history[i].filev[0]);
+                            }
+                            if(strcmp(history[i].filev[1], "0") != 0) {
+                                printf("> %s ", history[i].filev[1]);
+                            }
+                            if(history[i].in_background) {
+                                printf("&");
+                            }
+                            printf("\n");
+                        }
                             i = (i + 1) % history_size;
                         }
                     } else {
@@ -274,9 +286,22 @@ int main(int argc, char* argv[]) {
                     }
                 }
                 
-            } /*else if (command_counter == 1) {
+            } else if (command_counter == 1) {
                 // Mandato simple
-                int status;
+                printf("Simple\n");
+                // Guardo el comando en el historial
+                if (n_elem < history_size) {
+                    n_elem++;
+                } else {
+                    printf("Free\n");
+                    printf("Head: %d y cmd: %s\n", head, history[head].argvv[0][0]);
+                    free_command(&history[head]);
+                    head = (head + 1) % history_size;
+                }
+                store_command(argvv, filev, in_background, &history[tail]);
+                tail = (tail + 1) % history_size;
+
+                /*int status;
                 pid_t pid = fork();
                 switch(pid) {
                     case -1:    // Error
@@ -333,10 +358,23 @@ int main(int argc, char* argv[]) {
                             exit(-1);
                         }
                         break;
-                }
+                } */
             } else {
                 // Mandato compuesto
-                int status2;
+                printf("Compuesto\n");
+                // Guardo el comando en el historial
+                if (n_elem < history_size) {
+                    n_elem++;
+                } else {
+                    printf("Free\n");
+                    printf("Head: %d y cmd: %s\n", head, history[head].argvv[0][0]);
+                    free_command(&history[head]);
+                    head = (head + 1) % history_size;
+                }
+                store_command(argvv, filev, in_background, &history[tail]);
+                tail = (tail + 1) % history_size;
+
+                /*int status2;
                 pid_t pid2;
                 int fd[2];
                 int fdin;
@@ -367,13 +405,15 @@ int main(int argc, char* argv[]) {
                             // Redirecciones
                             
                     }
-                }
-            }*/
+                }*/
+            }
 
 		} else if (command_counter < 0) {
             perror("Error. Read command failed.\n");
             return -1;
         }
+
+        i_cmd++;
 	}
 	
 	return 0;
