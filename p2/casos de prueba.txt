@@ -38,3 +38,19 @@ mycalc 2 mul 3
 mycalc 4 div 2
 [OK] 4 / 2 = 2; Resto 0
 
+
+---- MYHIST -----
+1.
+ls
+ls | grep b &
+ls -1 | grep c > out.txt &
+myhist
+0 ls 
+1 ls  | grep b &
+2 ls -1  | grep c > out.txt &
+
+2.
+
+
+
+

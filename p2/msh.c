@@ -244,7 +244,7 @@ int main(int argc, char* argv[]) {
                 }
 
             } else if (strcmp("myhist", argv_execvp[0]) == 0) {
-                printf("ejecutar myhist\n");
+                // printf("ejecutar myhist\n");
                 // Comprobar sintaxis
                 char *m_error = "[ERROR] La estructura del comando es myhist <N*>\n";
                 if (strcmp(filev[0], "0")!=0 || strcmp(filev[1], "0")!=0 || strcmp(filev[2], "0")!=0 || in_background!=0 || command_counter!=1) {
@@ -252,72 +252,86 @@ int main(int argc, char* argv[]) {
                 } else if (argv_execvp[1] != NULL && ((strcmp(argv_execvp[1], "0")!=0 && atoi(argv_execvp[1])==0) || (atoi(argv_execvp[1])<0) || (atoi(argv_execvp[1])>20))) {
                     writeMsg(m_error, 1);
                 } else {
-                    // Ejecutar el comando
-                    int n = atoi(argv_execvp[1]);
                     if (argv_execvp[1] == NULL) {
-                        // print_20_comandos_hist
-
-                        // se debe escribir en la salida estandar de error
-
+                        // Imprimir el historial.
                         int i = head;
                         while (i != tail) {
+                            char msg[1024];
+                            int offset = 0;
                             if (history[i].argvv[0] != NULL) {
-                                printf("%d ", i);
-                                for(int j = 0; j < history[i].num_commands; j++) {
-                                    for(int k = 0; k < history[i].args[j]; k++) {
-                                        printf("%s ", history[i].argvv[j][k]);
+                                // printf("%d ", i);
+                                offset += sprintf(msg+offset, "%d ", i);
+                                for (int j=0; j<history[i].num_commands; j++) {
+                                    for (int k=0; k<history[i].args[j]; k++) {
+                                        // printf("%s ", history[i].argvv[j][k]);
+                                        offset += sprintf(msg+offset, "%s ", history[i].argvv[j][k]);
                                     }
-                                    if(j < history[i].num_commands - 1) {
-                                        printf("| ");
+                                    if (j<history[i].num_commands-1) {
+                                        // printf(" | ");
+                                        offset += sprintf(msg+offset, " | ");
                                     }
                                 }
-                                if(strcmp(history[i].filev[0], "0") != 0) {
-                                    printf("< %s ", history[i].filev[0]);
+                                if (strcmp(history[i].filev[0], "0") != 0) {
+                                    // printf("< %s ", history[i].filev[0]);
+                                    offset += sprintf(msg+offset, "< %s ", history[i].filev[0]);
                                 }
-                                if(strcmp(history[i].filev[1], "0") != 0) {
-                                    printf("> %s ", history[i].filev[1]);
+                                if (strcmp(history[i].filev[1], "0") != 0) {
+                                    // printf("> %s ", history[i].filev[1]);
+                                    offset += sprintf(msg+offset, "> %s ", history[i].filev[1]);
                                 }
-                                if(history[i].in_background) {
-                                    printf("&");
+                                if (history[i].in_background) {
+                                    // printf("&");
+                                    offset += sprintf(msg+offset, "&");
                                 }
-                                printf("\n");
+                                // printf("\n");
+                                offset += sprintf(msg+offset, "\n");
                             }
+                            writeMsg(msg, 2);
                             i = (i + 1) % history_size;
                         }
-                    } else if (n < 0 || n >= 20) {
-                        char *msg = "[ERROR] Comando no encontrado";
-                        writeMsg(msg, 1);
+
                     } else {
-                        char *msg;
-                        // exec N_command
-                        // Comprobar que exista ese comando
-                        int i = head;
-                        if (i == n) {
-                            // Ejecutar este comando
-                            printf("Ejecutar comando: ");
-                            for(int j = 0; j < history[i].num_commands; j++) {
-                                for(int k = 0; k < history[i].args[j]; k++) {
-                                    printf("%s ", history[i].argvv[j][k]);
+                        // Ejecutar el comando N.
+                        int n = atoi(argv_execvp[1]);         
+                        char *msg_error = "[ERROR] Comando no encontrado\n";        
+                        if (n < 0 || n >= 20) {
+                            writeMsg(msg_error, 1);
+                        } else {
+                            char msg[256];
+                            // exec N_command
+                            // Comprobar que exista ese comando
+                            int i = head;
+                            int en = -1;
+                            while (i != tail) {
+                                if (i == n) {
+                                    en = 0;
+                                    run_history = 1;
+                                    sprintf(msg, "Ejecutando el comando %d\n", n);
+                                    writeMsg(msg, 2);
+                                    // Obtener el comando
+                                    /*struct command cmd = history[i];
+                                    char **argss = (char **) malloc(sizeof(char *) * (cmd.args[0] + 1));
+                                    for (int i=0; i<cmd.args[0]; i++) {
+                                        argss[i] = strdup(cmd.argvv[0][i]);
+                                    }
+                                    argss[cmd.args[0]] == NULL;         // null final
+                                    // Ejecutar.
+                                    if (execvp(argss[0], argss) == -1) {
+                                        perror("Error. Command execvp.\n");
+                                        exit(-1);
+                                    }
+                                    // Liberar memoria.
+                                    for (int i=0; i<cmd.args[0]; i++) {
+                                        free(argss[i]);
+                                    }
+                                    free(argss);*/
+                                    break;
                                 }
-                                if(j < history[i].num_commands - 1) {
-                                    printf("| ");
-                                }
+                                i = (i + 1) % history_size;
                             }
-                            if(strcmp(history[i].filev[0], "0") != 0) {
-                                printf("< %s ", history[i].filev[0]);
+                            if (en == -1) {
+                                writeMsg(msg_error, 1);
                             }
-                            if(strcmp(history[i].filev[1], "0") != 0) {
-                                printf("> %s ", history[i].filev[1]);
-                            }
-                            if(history[i].in_background) {
-                                printf("&");
-                            }
-                            printf("\n");
-                            break;
-                        } else if (i == tail) {
-                            break;
-                        } else if (i != n) {
-                            i = (i + 1) % history_size;
                         }
                     }
                 }
@@ -337,14 +351,13 @@ int main(int argc, char* argv[]) {
                 store_command(argvv, filev, in_background, &history[tail]);
                 tail = (tail + 1) % history_size;
 
-                /*int status;
+                int status;
                 pid_t pid = fork();
                 switch(pid) {
                     case -1:    // Error
                         perror("Error. Fork failed.\n");
                         exit(-1);
                     case 0:     // Hijo
-                        
                         // Fichero de entrada
                         if (strcmp(filev[0], "0") != 0) {
                             if ((close(0)) < 0) {
@@ -388,13 +401,26 @@ int main(int argc, char* argv[]) {
                         printf("Fin proceso hijo.\n");
                         break;
                     default:    // Padre.
-                        // ...
-                        if (wait(&status) == -1) {
-                            perror("Error. Wait failed.\n");
-                            exit(-1);
+                        if (in_background) {
+                            printf("[%d]\n", getpid());
+                            signal(SIGCHLD, SIG_IGN);
+                        } else {
+                            /*while (wait(&status) > 0) {
+
+                                perror("Error. Child execution failed.\n");
+                                exit(-1);
+                            }*/
+                            pid_t wpid = wait(&status);
+                            if (wpid < 0) {
+                                perror("Error. Wait failed.\n");
+                                exit(-1);
+                            } else if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+                                printf("Error. Child process exited with error code: %d\n", WEXITSTATUS(status));
+                            }
                         }
                         break;
-                } */
+                } 
+
             } else {
                 // Mandato compuesto
                 printf("Compuesto\n");
@@ -410,7 +436,7 @@ int main(int argc, char* argv[]) {
                 store_command(argvv, filev, in_background, &history[tail]);
                 tail = (tail + 1) % history_size;
 
-                /*int status2;
+                int status2;
                 pid_t pid2;
                 int fd[2];
                 int fdin;
@@ -421,12 +447,12 @@ int main(int argc, char* argv[]) {
                     exit(-1);
                 }
 
-                // Ejecutar cada uno de los mandatos
+                // Recorrer todos los comandos
                 for (int i=0; i<command_counter; i++) {
-                    // Crear pipe
+                    // Crear siguiente pipe, excepto si es el último comando
                     if (i < command_counter - 1) {
                         if (pipe(fd) < 0) {
-                            perror("Error. Pipe failed.\n");
+                            perror("Error. Create pipe failed.\n");
                             exit(-1);
                         }
                     }
@@ -438,10 +464,46 @@ int main(int argc, char* argv[]) {
                             perror("Error. Fork failed.\n");
                             exit(-1);
                         case 0:     // Hijo
-                            // Redirecciones
-                            
+                            // Redireccion salida de error
+                            if (strcmp(filev[2], "0") != 0) {
+                                if (close(2) < 0) {
+                                    perror("Error. Close failed.\n");
+                                    exit(-1);
+                                }
+                                if ((open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+                                    perror("Error. Open failed.\n");
+                                    exit(-1);
+                                }
+                            }
+
+                            // Primer comando, redirecciona la entrada estandar
+                            if (i == 0 && strcmp(filev[0], "0") != 0) {
+                                if (close(2) < 0) {
+                                    perror("Error. Close failed.\n");
+                                    exit(-1);
+                                }
+                                if ((open(filev[0], O_RDWR, 0644)) < 0) {
+                                    perror("Error. Open failed.\n");
+                                    exit(-1);
+                                }
+                            } else {
+                                // La entrada del comando actual será la salida del comando anterior
+                                if (close(0) < 0) {
+                                    perror("Error. Close failed.\n");
+                                    exit(-1);
+                                }
+                                if (dup(fdin) < 0) {
+                                    perror("Error. Dup failed.\n");
+                                    exit(-1);
+                                }
+                                if (close(fdin) < 0) {
+                                    perror("Error. CLose failed.\n");
+                                    exit(-1);
+                                }
+
+                            }
                     }
-                }*/
+                }
             }
 
 		} else if (command_counter < 0) {
