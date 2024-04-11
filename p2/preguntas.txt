@@ -1,3 +1,0 @@
-   - la linea 138: setenv("Acc", "0", 1); se tiene que hacer? 
-     Inicializar la variable de entorno?
-   - 

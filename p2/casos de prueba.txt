@@ -52,5 +52,34 @@ myhist
 2.
 
 
+---- MINISHELL ----
+1.
+MSH>>ls
+Simple
+Comando guardado
+ autores.txt            libparser.so   msh     msh.o           probador_ssoo_p2.sh
+'casos de prueba.txt'   Makefile       msh.c   preguntas.txt
+MSH>>ls -1
+Simple
+Comando guardado
+autores.txt
+'casos de prueba.txt'
+libparser.so
+Makefile
+msh
+msh.c
+msh.o
+preguntas.txt
+probador_ssoo_p2.sh
+MSH>>ls > file.txt
+Simple
+Comando guardado
+MSH>>rm file.txt
+Simple
+Comando guardado
+MSH>>ls > file.txt &
+Simple
+Comando guardado
+[55607]
 
-
+2. 
