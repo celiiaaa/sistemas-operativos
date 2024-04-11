@@ -21,6 +21,13 @@ char filev[3][64];
 /* to store the execvp second parameter */
 char *argv_execvp[8];
 
+/* background processes -> zombies or not finished */
+int *background_processes;
+int background_processes_counter = 0;
+
+/* to store the pids */
+int *pids;
+
 void siginthandler(int param) {
 	printf("**** Exiting MSH **** \n");
 	//signal(SIGINT, siginthandler);
@@ -121,7 +128,7 @@ void getCompleteCommand(char*** argvv, int num_command) {
 /* Función auxiliar para escribir mensajes */
 void writeMsg(char *msg, int fd) {
     if ((write(fd, msg, strlen(msg))) < 0) {
-        perror("Error. Write error_msg failed.\n");
+        perror("Error. Write msg failed.\n");
         exit(-1);
     }
 }
@@ -209,8 +216,9 @@ void imprimir_hist() {
     }
 }
 // Ejecutar el comando.
-void ejecutar_hist(struct command cmd, char **argss) {
-    pid_t pid = fork();
+void ejecutar_hist(/*struct command cmd, char **argss*/) {
+    printf("Ejecutar el comando.\n");
+    /*pid_t pid = fork();
     switch (pid) {
         case -1: 
             perror("Error. Fork failed.\n");
@@ -232,7 +240,7 @@ void ejecutar_hist(struct command cmd, char **argss) {
     for (int i=0; i<cmd.args[0]; i ++) {
         free(argss[i]);
     }
-    free(argss);
+    free(argss);*/
 }
 
 
@@ -247,7 +255,6 @@ int main(int argc, char* argv[]) {
 	char *cmd_lines[10];
 
     setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
-    int i_cmd = 0;
 
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
@@ -299,12 +306,12 @@ int main(int argc, char* argv[]) {
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
-                break;
+                exit(-1);
 			} 
             
-            i_cmd = 0;
-            // printf("I es: %d\n", i_cmd);
-            getCompleteCommand(argvv, i_cmd);
+            for (int a=0; a<command_counter; a++) {
+                getCompleteCommand(argvv, a);
+            }
 
             if (strcmp("mycalc", argv_execvp[0]) == 0) {
                 // Comprobar sintaxis
@@ -329,12 +336,12 @@ int main(int argc, char* argv[]) {
                 } else if (argv_execvp[1] != NULL && ((strcmp(argv_execvp[1], "0")!=0 && atoi(argv_execvp[1])==0) || (atoi(argv_execvp[1])<0) || (atoi(argv_execvp[1])>20))) {
                     writeMsg(m_error, 1);
                 } else {
+                    // Imprimir 20 ultimos comandos
                     if (argv_execvp[1] == NULL) {
-                        // Imprimir 20 ultimos comandos
                         imprimir_hist();
-
-                    } else {
-                        // Ejecutar el comando N
+                    } 
+                    // Ejecutar el comando N
+                    else {
                         int n = atoi(argv_execvp[1]);         
                         char *msg_error = "[ERROR] Comando no encontrado\n";        
                         if (n < 0 || n >= 20) {
@@ -356,10 +363,10 @@ int main(int argc, char* argv[]) {
                                     for (int i=0; i<cmd.args[0]; i++) {
                                         argss[i] = strdup(cmd.argvv[0][i]);
                                     }
-                                    argss[cmd.args[0]] == NULL;         // null final
+                                    argss[cmd.args[0]] = NULL;         // null final
                                     // Ejecutar.
                                     printf("Ejecutar\n");
-                                    ejecutar_hist(cmd, argss);
+                                    ejecutar_hist(/*cmd, argss*/);
                                     break;
                                 }
                                 i = (i + 1) % history_size;
@@ -372,8 +379,122 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            // Mandato externo.
+            /* else {
+                pids = (int *) malloc(command_counter * sizeof(int));
+                int pipefd[command_counter-1][2];
+
+                for (int i=0; i<command_counter; i++) {
+                    // Crear el pipe
+                    if (pipe(pipefd[i]) < 0) {
+                        perror("Error. Create pipe failed.\n");
+                        exit(-1);
+                    }
+                    int pid = fork();
+
+                    switch (pid) {
+                        case -1:
+                            perror("Error. Fork failed.\n");
+                            exit(-1);
+                        case 0:
+                            // Primer comando
+                            if (i == 0) {
+                                // Redireccionar la entrada
+                                if (strcmp(filev[0], "0") != 0) {
+                                    int fdin;
+                                    if ((fdin = open(filev[0], O_RDONLY)) < 0) {
+                                        perror("Error. Open failed.\n");
+                                        exit(-1);
+                                    }
+                                    dup2(fdin, STDIN_FILENO);
+                                    close(fdin);
+                                }
+                            }
+                            // Comando intermedio o final
+                            else {
+                                dup2(pipefd[i-1][0], STDIN_FILENO);
+                                close(pipefd[i-1][1]);
+                                waitpid(pids[i-1], &status, 0);
+                            }
+                            // Cerrar la lectura del pipe actual
+                            close(pipefd[i][0]);
+                            // Comando final
+                            if (i == command_counter-1) {
+                                close(pipefd[i][0]);
+                                close(pipefd[i][1]);
+                                // Redireccionar la salida
+                                if (strcmp(filev[1], "0") != 0) {
+                                    int fdout;
+                                    if ((fdout = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644)) < 0) {
+                                        perror("Error. Open failed.\n");
+                                        exit(-1);
+                                    }
+                                    dup2(fdout, STDOUT_FILENO);
+                                    close(fdout);
+                                }
+                                // Redireccionar la salida de error
+                                if (strcmp(filev[3], "0") != 0) {
+                                    int fderr;
+                                    if ((fderr = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644)) < 0) {
+                                        perror("Error. Open failed.\n");
+                                        exit(-1);
+                                    }
+                                    dup2(fderr, STDERR_FILENO);
+                                    close(fderr);
+                                }
+                            }
+
+                            // Ejecutar el comando
+                            if (execvp(argv_execvp[0], argv_execvp) < 0) {
+                                perror("Error. Execvp failed.\n");
+                                exit(-1);
+                            }
+
+                            break;
+
+                        default:
+                            // Añadir el pid al array
+                            pids[i] = pid;
+
+                            // Cerrar los pipes que no se usan
+                            if (i > 0) {
+                                close(pipefd[i-1][0]);
+                                close(pipefd[i-1][1]);
+                            }
+
+                            // último comando
+                            if (i == command_counter-1) {
+                                // Cerrar los pipes
+                                close(pipefd[i][0]);
+                                close(pipefd[i][1]);
+                                // Comprobar si es en background o no
+                                if (in_background) {
+                                    //
+                                    printf("[%d]\n", getpid());
+                                    background_processes = (int *) realloc(background_processes, (background_processes_counter + command_counter) * sizeof(int));
+                                    for (int j=0; j<command_counter; j++) {
+                                        background_processes[background_processes_counter-j] = pids[j];
+                                    }
+                                } else {
+                                    // Esperar a que terminen todos los procesos de la secuencia actual
+                                    for (int j=command_counter-1; j>=0; j--) {
+                                        waitpid(pids[j], &status, 0);
+                                    }
+                                    // Esperar a que terminen los procesos en background de las secuencias anteriores
+                                    int status2;
+                                    while (background_processes_counter != 0) {
+                                        waitpid(background_processes[background_processes_counter-1], &status2, 0);
+                                        background_processes_counter--;
+                                    }
+                                }
+                            }
+                            break;
+                    }   
+                }
+            }*/
+
             // Mandato simple
-            else if (command_counter == 1) {
+             else if (command_counter == 1) {
                 // Guardo el comando en el historial
                 if (n_elem < history_size) {
                     n_elem++;
@@ -437,7 +558,9 @@ int main(int argc, char* argv[]) {
                         if (in_background != 0) {
                             printf("[%d]\n", getpid());
                             signal(SIGCHLD, SIG_IGN);
+                            // usleep(1000);
                         } else {
+                            // WEXITSTATUS(status)
                             while (wait(&status) > 0) {
                                 if (status < 0) {
                                     perror("Error. Child execution failed.\n");
@@ -604,7 +727,9 @@ int main(int argc, char* argv[]) {
                 if (in_background != 0) {
                     printf("[%d]\n", getpid());
                     signal(SIGCHLD, SIG_IGN);
+                    // usleep(100000);
                 } else {
+                    // WEXITSTATUS(status)
                     while (wait(&status2) < 0) {
                         if (status2 < 0) {
                             perror("Error. Child execution failed.\n");
@@ -612,14 +737,15 @@ int main(int argc, char* argv[]) {
                         }
                     }
                 }
-            }
+            } 
 
-		} else if (command_counter < 0) {
+		} 
+        // Comprobar que la lectura no produjo error
+        else if (command_counter < 0) {
             perror("Error. Read command failed.\n");
             return -1;
         }
 
-        i_cmd++;
 	}
 	
     // Fin.
