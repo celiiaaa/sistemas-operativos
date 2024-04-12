@@ -138,7 +138,10 @@ void writeMsg(char *msg, int fd) {
 void suma(int op1, int op2) {
     char result[100];
     char *str_acc = getenv("Acc");
-    int acc = atoi(str_acc);
+    int acc = 0;
+    if (str_acc != NULL) {
+        acc = atoi(str_acc);
+    }
     int suma = op1 + op2;
     acc = acc + suma;
     char new_acc[10];
@@ -227,8 +230,6 @@ int main(int argc, char* argv[]) {
 	int executed_cmd_lines = -1;
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
-
-    setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
 
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
