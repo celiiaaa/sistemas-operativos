@@ -22,11 +22,11 @@ char filev[3][64];
 char *argv_execvp[8];
 
 /* background processes -> zombies or not finished */
-int *background_processes;
-int background_processes_counter = 0;
+/*int *background_processes;
+int background_processes_counter = 0;*/
 
 /* to store the pids */
-int *pids;
+/*int *pids;*/
 
 void siginthandler(int param) {
 	printf("**** Exiting MSH **** \n");
