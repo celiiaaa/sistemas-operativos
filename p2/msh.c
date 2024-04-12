@@ -254,7 +254,7 @@ int main(int argc, char* argv[]) {
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
 
-    setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
+    // setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
 
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
@@ -366,7 +366,7 @@ int main(int argc, char* argv[]) {
                                     argss[cmd.args[0]] = NULL;         // null final
                                     // Ejecutar.
                                     printf("Ejecutar\n");
-                                    ejecutar_hist(/*cmd, argss*/);
+                                    /* ejecutar_hist(cmd, argss); */
                                     break;
                                 }
                                 i = (i + 1) % history_size;
@@ -494,7 +494,7 @@ int main(int argc, char* argv[]) {
             }*/
 
             // Mandato simple
-             else if (command_counter == 1) {
+            else if (command_counter == 1) {
                 // Guardo el comando en el historial
                 if (n_elem < history_size) {
                     n_elem++;
@@ -519,7 +519,7 @@ int main(int argc, char* argv[]) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
-                            if ((open(filev[0], O_RDWR, 0644)) < 0) {
+                            if ((open(filev[0], O_RDWR, 0666)) < 0) {
                                 perror("Error. Open failed.\n");
                                 exit(-1);
                             }
@@ -530,7 +530,7 @@ int main(int argc, char* argv[]) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
-                            if ((open(filev[1], O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0) {
+                            if ((open(filev[1], O_CREAT | O_WRONLY | O_TRUNC, 0666)) < 0) {
                                 perror("Error. Open failed.\n");
                                 exit(-1);
                             }
@@ -541,7 +541,7 @@ int main(int argc, char* argv[]) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
-                            if ((open(filev[2], O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0) {
+                            if ((open(filev[2], O_CREAT | O_WRONLY | O_TRUNC, 0666)) < 0) {
                                 perror("Error. Open failed.\n");
                                 exit(-1);
                             }
@@ -619,7 +619,7 @@ int main(int argc, char* argv[]) {
                                     perror("Error. Close failed.\n");
                                     exit(-1);
                                 }
-                                if ((open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+                                if ((open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
                                     perror("Error. Open failed.\n");
                                     exit(-1);
                                 }
@@ -631,7 +631,7 @@ int main(int argc, char* argv[]) {
                                     perror("Error. Close failed.\n");
                                     exit(-1);
                                 }
-                                if ((open(filev[0], O_RDWR, 0644)) < 0) {
+                                if ((open(filev[0], O_RDWR, 0666)) < 0) {
                                     perror("Error. Open failed.\n");
                                     exit(-1);
                                 }
@@ -659,7 +659,7 @@ int main(int argc, char* argv[]) {
                                         perror("Error. Close failed.\n");
                                         exit(-1);
                                     }
-                                    if (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644) < 0) {
+                                    if (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666) < 0) {
                                         perror("Error. Open failed.\n");
                                         exit(-1);
                                     }
