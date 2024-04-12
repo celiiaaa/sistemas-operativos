@@ -49,6 +49,7 @@ struct command {
     int in_background;
 };
 
+int index_hist = 0;
 int history_size = 20;
 struct command *history;
 int head = 0;
@@ -215,33 +216,6 @@ void imprimir_hist() {
         i = (i + 1) % history_size;
     }
 }
-// Ejecutar el comando.
-void ejecutar_hist(/*struct command cmd, char **argss*/) {
-    printf("Ejecutar el comando.\n");
-    /*pid_t pid = fork();
-    switch (pid) {
-        case -1: 
-            perror("Error. Fork failed.\n");
-            exit(-1);
-            break;
-        case 0:
-            if (execvp(argss[0], argss) < 0) {
-                perror("Error. Ececvp failed.\n");
-                exit(-1);
-                break;
-            }
-        default:
-            int status;
-            waitpid(pid, &status, 0);
-
-            break;
-    }
-    // Liberar la memoria.
-    for (int i=0; i<cmd.args[0]; i ++) {
-        free(argss[i]);
-    }
-    free(argss);*/
-}
 
 
 /**
@@ -254,7 +228,7 @@ int main(int argc, char* argv[]) {
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
 
-    // setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
+    setenv("Acc", "0", 1);      // Inicializar la variable de entorno a 0
 
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
@@ -283,7 +257,25 @@ int main(int argc, char* argv[]) {
 		signal(SIGINT, siginthandler);
 
 		if (run_history) {
-            run_history=0;
+            run_history = 0;
+
+            // Asignar valores necesarios
+            command_counter = history[index_hist].num_commands;
+            in_background = history[index_hist].in_background;
+            for (int fd=0; fd<3; fd++) {
+                strcpy(filev[fd], history[index_hist].filev[fd]);
+            }
+            // Asignar comandos y sus argumentos
+            for (int i_cmd=0; i_cmd<command_counter; i_cmd++) {
+                int n_args = history[index_hist].args[i_cmd];
+                argvv[i_cmd] = (char **) calloc(n_args+1, sizeof(char *));
+                for (int i_arg=0; i_arg<n_args; i_arg++) {
+                    argvv[i_cmd][i_arg] = strdup(history[index_hist].argvv[i_cmd][i_arg]);
+                }
+                argvv[i_cmd][n_args] = NULL;        // Añadir NULL al final
+            }
+            argvv[history[index_hist].num_commands+1] = NULL;        // Añadir NULL al final
+
         } else {
             // Prompt 
             write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
@@ -303,7 +295,7 @@ int main(int argc, char* argv[]) {
 
 
 		/************************ STUDENTS CODE ********************************/
-	    if (command_counter > 0) {
+        if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
                 exit(-1);
@@ -349,27 +341,15 @@ int main(int argc, char* argv[]) {
                         } else {
                             char msg[256];
                             // Comprobar que exista ese comando
-                            int i = head;
+                            index_hist = head;
                             int en = -1;
-                            while (i != tail) {
-                                if (i == n) {
+                            while (index_hist != tail) {
+                                if (index_hist == n) {
                                     en = 0;
                                     run_history = 1;
-                                    sprintf(msg, "Ejecutando el comando %d\n", n);
-                                    writeMsg(msg, 2);
-                                    // Obtener el comando
-                                    struct command cmd = history[i];
-                                    char **argss = (char **) malloc(sizeof(char *) * (cmd.args[0] + 1));
-                                    for (int i=0; i<cmd.args[0]; i++) {
-                                        argss[i] = strdup(cmd.argvv[0][i]);
-                                    }
-                                    argss[cmd.args[0]] = NULL;         // null final
-                                    // Ejecutar.
-                                    printf("Ejecutar\n");
-                                    /* ejecutar_hist(cmd, argss); */
                                     break;
                                 }
-                                i = (i + 1) % history_size;
+                                index_hist = (index_hist + 1) % history_size;
                             }
                             if (en == -1) {
                                 writeMsg(msg_error, 1);
