@@ -21,13 +21,6 @@ char filev[3][64];
 /* to store the execvp second parameter */
 char *argv_execvp[8];
 
-/* background processes -> zombies or not finished */
-/*int *background_processes;
-int background_processes_counter = 0;*/
-
-/* to store the pids */
-/*int *pids;*/
-
 /* myhistory */
 
 struct command {
@@ -70,7 +63,7 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
     while (argvv[num_commands] != NULL) {
         num_commands++;
     }
-    num_commands--;         // He tenido que añadir esto porque daba error...
+    // num_commands--;         // He tenido que añadir esto porque daba error...
     for (int f=0;f < 3; f++) {
         if (strcmp(filev[f], "0") != 0) {
             strcpy((*cmd).filev[f], filev[f]);
@@ -456,12 +449,11 @@ int main(int argc, char* argv[]) {
                 store_command(argvv, filev, in_background, &history[tail]);
                 tail = (tail + 1) % history_size;
 
-                // Fork
                 int status2;
                 pid_t pid2;
                 int fd[2];
                 int fdin;
-                // Duplicar el fichero de entrada
+                // Duplicar la entrada
                 if ((fdin = dup(0)) < 0) {
                     perror("Error. Dup failed.\n");
                     exit(-1);
@@ -469,7 +461,7 @@ int main(int argc, char* argv[]) {
                 // Recorrer todos los comandos
                 for (int i=0; i<command_counter; i++) {
                     // Crear siguiente pipe, excepto si es el último comando
-                    if (i < command_counter - 1) {
+                    if (i != command_counter-1) {
                         if (pipe(fd) < 0) {
                             perror("Error. Create pipe failed.\n");
                             exit(-1);
@@ -484,39 +476,58 @@ int main(int argc, char* argv[]) {
                         exit(-1);
                         break;
                     case 0:     // Hijo
-                        // Redireccion salida de error
+                        // Redireccion salida estandar de error
                         if (strcmp(filev[2], "0") != 0) {
+                            // Cerrar la salida estándar de error
                             if (close(2) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
-                            if ((open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
+                            // Abrir el fichero
+                            int fd_in;
+                            if (fd_in = (open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
                                 perror("Error. Open failed.\n");
+                                exit(-1);
+                            }
+                            // Duplicar el fichero
+                            if ((dup(fd_in)) < 0) {
+                                perror("Error. Dup failed.\n");
                                 exit(-1);
                             }
                         }
 
                         // Primer comando, redirecciona la entrada estandar
                         if (i == 0 && strcmp(filev[0], "0") != 0) {
-                            if (close(2) < 0) {
-                                perror("Error. Close failed.\n");
-                                exit(-1);
-                            }
-                            if ((open(filev[0], O_RDWR, 0666)) < 0) {
-                                perror("Error. Open failed.\n");
-                                exit(-1);
-                            }
-                        } 
-                        // La entrada del comando actual será la salida del comando anterior
-                        else {
+                            // Cerrar la entrada estandar
                             if (close(0) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
+                            // Abirr el fichero
+                            int fd_out;
+                            if (fd_out = (open(filev[0], O_RDWR, 0666)) < 0) {
+                                perror("Error. Open failed.\n");
+                                exit(-1);
+                            }
+                            // Duplicar el fichero
+                            if (dup(fd_out) < 0) {
+                                perror("Error. Dup failed.\n");
+                                exit(-1);
+                            }
+                        }
+                        // La entrada del comando actual será la salida del comando anterior
+                        else {
+                            // Cerrar la entrada estandar
+                            if (close(0) < 0) {
+                                perror("Error. Close failed.\n");
+                                exit(-1);
+                            }
+                            // Duplicar el descriptor asociado a la entrada
                             if (dup(fdin) < 0) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
                             }
+                            // Cerrar el descriptor asociado
                             if (close(fdin) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
@@ -526,30 +537,42 @@ int main(int argc, char* argv[]) {
                         // Último comando, redirecciona la salida estandar
                         if (i == command_counter-1) {
                             if (strcmp(filev[1], "0") == 1) {
+                                // Cerrar la salida estandar
                                 if (close(1) < 0) {
                                     perror("Error. Close failed.\n");
                                     exit(-1);
                                 }
-                                if (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666) < 0) {
+                                // Abrir el fichero
+                                int fd_out;
+                                if (fd_out = (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
                                     perror("Error. Open failed.\n");
+                                    exit(-1);
+                                }
+                                // Duplicar el fichero
+                                if (dup(fd_out) < 0) {
+                                    perror("Error. Dup failed.\n");
                                     exit(-1);
                                 }
                             }
                         }
                         // Redirecciona la salida estandar el proceso actual a la salida de la tubería
                         else {
+                            // Cerrar la salida estandar
                             if (close(1) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
+                            // Duplicar el descriptor de fichero asociado a la salida
                             if (dup(fd[1]) < 0) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
                             }
+                            // Cerrar el de entrada
                             if (close(fd[0]) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
+                            // Cerrar el de salida
                             if (close(fd[1]) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
