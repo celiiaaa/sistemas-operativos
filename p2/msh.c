@@ -513,7 +513,7 @@ int main(int argc, char* argv[]) {
                             if (dup(fd_in) < 0) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
-			    }
+			                }
                         }
                         // La entrada del comando actual será la salida del comando anterior
                         else {
