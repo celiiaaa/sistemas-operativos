@@ -279,9 +279,9 @@ int main(int argc, char* argv[]) {
             }
 
             // Mandato interno myhist.
-            else if (strcmp(argvv[0][0], "myhist") == 0) {
+            else if (strcmp(argvv[0][0], "myhistory") == 0) {
                 // Mensaje de error
-                char *msg_error = "[ERROR] La estructura del comando es myhist <N*>\n";
+                char *msg_error = "[ERROR] La estructura del comando es myhistory <N*>\n";
                 if (command_counter==1 && in_background==0 && strcmp(filev[0], "0")==0 && strcmp(filev[1], "0")==0 && strcmp(filev[2], "0")==0) {
                     // Imprimir el historial
                     if (argvv[0][1] == NULL) {
