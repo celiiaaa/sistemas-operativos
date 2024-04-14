@@ -535,24 +535,22 @@ int main(int argc, char* argv[]) {
                         }
 
                         // Último comando, redirecciona la salida estandar
-                        if (i == command_counter-1) {
-                            if (strcmp(filev[1], "0") == 1) {
-                                // Cerrar la salida estandar
-                                if (close(1) < 0) {
-                                    perror("Error. Close failed.\n");
-                                    exit(-1);
-                                }
-                                // Abrir el fichero
-                                int fd_out;
-                                if (fd_out = (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
-                                    perror("Error. Open failed.\n");
-                                    exit(-1);
-                                }
-                                // Duplicar el fichero
-                                if (dup(fd_out) < 0) {
-                                    perror("Error. Dup failed.\n");
-                                    exit(-1);
-                                }
+                        if (i == command_counter-1 && strcmp(filev[1], "0") != 0) {
+                            // Cerrar la salida estandar
+                            if (close(1) < 0) {
+                                perror("Error. Close failed.\n");
+                                exit(-1);
+                            }
+                            // Abrir el fichero
+                            int fd_out;
+                            if (fd_out = (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
+                                perror("Error. Open failed.\n");
+                                exit(-1);
+                            }
+                            // Duplicar el fichero
+                            if (dup(fd_out) < 0) {
+                                perror("Error. Dup failed.\n");
+                                exit(-1);
                             }
                         }
                         // Redirecciona la salida estandar el proceso actual a la salida de la tubería
