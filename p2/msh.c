@@ -451,7 +451,6 @@ int main(int argc, char* argv[]) {
 
                 int status2;
                 pid_t pid2;
-                int fd[2];
                 int fdin;
                 // Duplicar la entrada
                 if ((fdin = dup(0)) < 0) {
@@ -460,6 +459,7 @@ int main(int argc, char* argv[]) {
                 }
                 // Recorrer todos los comandos
                 for (int i=0; i<command_counter; i++) {
+                    int fd[2];
                     // Crear siguiente pipe, excepto si es el último comando
                     if (i != command_counter-1) {
                         if (pipe(fd) < 0) {
@@ -534,23 +534,26 @@ int main(int argc, char* argv[]) {
                             }
                         }
 
-                        // Último comando, redirecciona la salida estandar
-                        if (i == command_counter-1 && strcmp(filev[1], "0") != 0) {
-                            // Cerrar la salida estandar
-                            if (close(1) < 0) {
-                                perror("Error. Close failed.\n");
-                                exit(-1);
-                            }
-                            // Abrir el fichero
-                            int fd_out;
-                            if (fd_out = (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
-                                perror("Error. Open failed.\n");
-                                exit(-1);
-                            }
-                            // Duplicar el fichero
-                            if (dup(fd_out) < 0) {
-                                perror("Error. Dup failed.\n");
-                                exit(-1);
+                        // Último comando
+                        if (i == command_counter-1) {
+                            // Redireccion de la salida estandar
+                            if (strcmp(filev[1], "0") != 0) {
+                                // Cerrar la salida estandar
+                                if (close(1) < 0) {
+                                    perror("Error. Close failed.\n");
+                                    exit(-1);
+                                }
+                                // Abrir el fichero
+                                int fd_out;
+                                if (fd_out = (open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0666)) < 0) {
+                                    perror("Error. Open failed.\n");
+                                    exit(-1);
+                                }
+                                // Duplicar el fichero
+                                if (dup(fd_out) < 0) {
+                                    perror("Error. Dup failed.\n");
+                                    exit(-1);
+                                }
                             }
                         }
                         // Redirecciona la salida estandar el proceso actual a la salida de la tubería
@@ -565,13 +568,13 @@ int main(int argc, char* argv[]) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
                             }
-                            // Cerrar el de entrada
-                            if (close(fd[0]) < 0) {
+                            // Cerrar el de salida
+                            if (close(fd[1]) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
-                            // Cerrar el de salida
-                            if (close(fd[1]) < 0) {
+                            // Cerrar el de entrada
+                            if (close(fd[0]) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
