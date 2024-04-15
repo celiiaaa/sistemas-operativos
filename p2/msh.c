@@ -485,7 +485,7 @@ int main(int argc, char* argv[]) {
                             }
                             // Abrir el fichero
                             int fd_err;
-                            if (fd_err = (open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 06l66)) < 0) {
+                            if (fd_err = (open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
                                 perror("Error. Open failed.\n");
                                 exit(-1);
                             }
