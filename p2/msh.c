@@ -484,13 +484,13 @@ int main(int argc, char* argv[]) {
                                 exit(-1);
                             }
                             // Abrir el fichero
-                            int fd_in;
-                            if (fd_in = (open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
+                            int fd_err;
+                            if (fd_err = (open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 06l66)) < 0) {
                                 perror("Error. Open failed.\n");
                                 exit(-1);
                             }
                             // Duplicar el fichero
-                            if ((dup(fd_in)) < 0) {
+                            if ((dup(fd_err)) < 0) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
                             }
@@ -503,17 +503,17 @@ int main(int argc, char* argv[]) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
                             }
-                            // Abirr el fichero
-                            int fd_out;
-                            if (fd_out = (open(filev[0], O_RDWR, 0666)) < 0) {
+                            // Abrir el fichero
+                            int fd_in;
+                            if (fd_in = (open(filev[0], O_RDONLY, 0666)) < 0) {
                                 perror("Error. Open failed.\n");
                                 exit(-1);
                             }
                             // Duplicar el fichero
-                            if (dup(fd_out) < 0) {
+                            if (dup(fd_in) < 0) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
-                            }
+                            
                         }
                         // La entrada del comando actual será la salida del comando anterior
                         else {
