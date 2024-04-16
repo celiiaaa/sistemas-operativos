@@ -36,7 +36,7 @@ struct command {
     int in_background;
 };
 
-int index_hist = 0;
+int index_hist = 0;         // Índice del comando a ejecutar del historial
 int history_size = 20;
 struct command *history;
 int head = 0;
@@ -63,7 +63,7 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
     while (argvv[num_commands] != NULL) {
         num_commands++;
     }
-    // num_commands--;         // He tenido que añadir esto porque daba error...
+
     for (int f=0;f < 3; f++) {
         if (strcmp(filev[f], "0") != 0) {
             strcpy((*cmd).filev[f], filev[f]);
@@ -114,6 +114,13 @@ void getCompleteCommand(char*** argvv, int num_command) {
 
 void siginthandler(int param) {
 	printf("**** Exiting MSH **** \n");
+    // Recorre cada comando en el historial
+    for (int i = 0; i < history_size; i++) {
+        // Libera la memoria asociada con cada comando
+        free_command(&history[i]);
+    }
+    
+    // Liberar el historial
     free(history);
 	//signal(SIGINT, siginthandler);
 	exit(0);
@@ -168,6 +175,7 @@ int main(int argc, char* argv[]) {
 		int in_background = 0;
 		signal(SIGINT, siginthandler);
 
+        // Ejecutar el comando del historial
 		if (run_history) {
             run_history = 0;
             // Escribir que se está ejecutando un comando
@@ -211,57 +219,70 @@ int main(int argc, char* argv[]) {
 
 		/************************ STUDENTS CODE ********************************/
         if (command_counter > 0) {
+            // Comprobar que no se ha superado el número máximo de comandos
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
                 exit(-1);
 			}
 
-            // Mandato interno mycalc.
+            // Mandato interno mycalc
             if (strcmp(argvv[0][0], "mycalc") == 0) {
                 // Mensaje de error
                 char *msg_error = "[ERROR] La estructura del comando es mycalc <operando_1> <add/mul/div> <operando_2>\n";
+                // Comprobar que es un comando simple, no se ejecuta en background y que no se redirige la entrada/salida
                 if (command_counter==1 && in_background==0 && strcmp(filev[0], "0")==0 && strcmp(filev[1], "0")==0 && strcmp(filev[2], "0")==0) {
+                    // Comprobar que se han introducido los argumentos necesarios
                     if (argvv[0][1] != NULL && argvv[0][2] && argvv[0][3]) {
+                        // Comprobar que los operandos introducidos son números
                         if (strcmp(argvv[0][1], "cero")!=0 && strcmp(argvv[0][3], "cero")!=0 && ((strcmp(argvv[0][1], "0")!=0 && atoi(argvv[0][1])!=0) || (strcmp(argvv[0][3], "0")!=0 && atoi(argvv[0][3])!=0))) {
                             int op1 = atoi(argvv[0][1]);
                             int op2 = atoi(argvv[0][3]);
-                            char result[100];
-                            int err = -1;
-                            // Suma
+                            char result[100];       // Mensaje de resultado
+                            int err = -1;           // Error
+                            // Operación suma
                             if (strcmp(argvv[0][2], "add") == 0) {
+                                // Obtener el valor de la variable de entorno
                                 char *str_acc = getenv("Acc");
                                 int acc = 0;
                                 if (str_acc != NULL) {
                                     acc = atoi(str_acc);
                                 }
+                                // REalizar la suma
                                 int suma = op1 + op2;
                                 acc += suma;
                                 char new_acc[10];
                                 sprintf(new_acc, "%d", acc);
+                                // Guardar el valor de la variable de entorno
                                 if (setenv("Acc", new_acc, 1) != 0) {
                                     perror("Error. Acc setenv.\n");
                                     exit(-1);
                                 }
+                                // Escribir el mensaje
                                 sprintf(result, "[OK] %d + %d = %d; Acc %d\n", op1, op2, suma, acc);
                                 writeMsg(result, 2);
                                 err = 0;
                             }
-                            // Multiplicación
+                            // Operación multiplicación
                             else if (strcmp(argvv[0][2], "mul") == 0) {
+                                // Realizar la multiplicación
                                 int multi = op1 * op2;
+                                // Escribir el mensaje
                                 sprintf(result, "[OK] %d * %d = %d\n", op1, op2, multi);
                                 writeMsg(result, 2);
                                 err = 0;
                             }
                             // División
                             else if (strcmp(argvv[0][2], "div") == 0) {
+                                // Comprobar los operandos de la división
                                 if (op2 == 0) {
                                     perror("Error. Zero div.\n");
                                 } else if (op2 > op1) {
                                     perror("Error. Inf dividend > divisor.\n");
                                 } else {
+                                    // Realizar la división
                                     int div = op1 / op2;
                                     int rest = op1 % op2;
+                                    // Escribir el mensaje
                                     sprintf(result, "[OK] %d / %d = %d; Resto %d\n", op1, op2, div, rest);
                                     writeMsg(result, 2);
                                     err = 0;
@@ -297,10 +318,12 @@ int main(int argc, char* argv[]) {
             else if (strcmp(argvv[0][0], "myhistory") == 0) {
                 // Mensaje de error
                 char *msg_error = "[ERROR] La estructura del comando es myhistory <N*>\n";
+                // Comprobar que es un comando simple, no se ejecuta en background y que no se redirige la entrada/salida
                 if (command_counter==1 && in_background==0 && strcmp(filev[0], "0")==0 && strcmp(filev[1], "0")==0 && strcmp(filev[2], "0")==0) {
                     // Imprimir el historial
                     if (argvv[0][1] == NULL) {
                         int i = head;
+                        // Recorrer todos los comandos del historial
                         while (i != tail) {
                             char msg[1024];
                             int offset = 0;
@@ -328,6 +351,7 @@ int main(int argc, char* argv[]) {
                                 }
                                 offset += sprintf(msg+offset, "\n");
                             }
+                            // Escribir el mensaje
                             writeMsg(msg, 2);
                             i = (i + 1) % history_size;
                         }
@@ -370,6 +394,16 @@ int main(int argc, char* argv[]) {
             // Comando simple
             else if (command_counter == 1) {
 
+                // Guardar el comando en el historial
+                store_command(argvv, filev, in_background, &history[tail]);
+                tail = (tail + 1) % history_size;
+                if (n_elem < history_size) {
+                    n_elem++;
+                } else {
+                    free_command(&history[head]);
+                    head = (head + 1) % history_size;
+                }
+
                 // Fork
                 int status;
                 pid_t pid = fork();
@@ -379,7 +413,7 @@ int main(int argc, char* argv[]) {
                     exit(-1);
                     break;
                 case 0:     // Hijo
-                    // Fichero de entrada
+                    // Redireccionar la entrada
                     if (strcmp(filev[0], "0") != 0) {
                         // Cerrar la entrada estándar
                         if ((close(0)) < 0) {
@@ -392,7 +426,7 @@ int main(int argc, char* argv[]) {
                             exit(-1);
                         }
                     }
-                    // Fichero de salida
+                    // Redireccionar la salida
                     if (strcmp(filev[1], "0") != 0) {
                         // Cerrar la salida estándar
                         if ((close(1)) < 0) {
@@ -405,7 +439,7 @@ int main(int argc, char* argv[]) {
                             exit(-1);
                         }
                     }
-                    // Fichero de error
+                    // Redireccionar la salida de error
                     if (strcmp(filev[2], "0") != 0) {
                         // Cerrar la salida estándar de error
                         if ((close(2)) < 0) {
@@ -426,30 +460,18 @@ int main(int argc, char* argv[]) {
                         exit(-1);
                     }
 
-                    // Guardar el comando en el historial
-                    store_command(argvv, filev, in_background, &history[tail]);
-                    tail = (tail + 1) % history_size;
-                    if (n_elem < history_size) {
-                        n_elem++;
-                    } else {
-                        free_command(&history[head]);
-                        head = (head + 1) % history_size;
-                    }
-                    
                     break;
                 default:    // Padre.
-                    if (in_background == 0) {
-                        // Foreground
+                    if (in_background == 0) {       // Foreground
+                        // Esperar a que termine el hijo
                         while (wait(&status) > 0) {
                             if (status < 0) {
                                 perror("Error. Child execution failed.\n");
                                 exit(-1);
                             }
                         }
-                    } else {
-                        // Background
-                        printf("[%d]\n", getpid());
-                        // signal(SIGCHLD, SIG_IGN);
+                    } else {                        // Background
+                        printf("[%d]\n", getpid());     // Imprimir el PID
                     }
                     break;
                 }
@@ -495,7 +517,7 @@ int main(int argc, char* argv[]) {
                         exit(-1);
                         break;
                     case 0:     // Hijo
-                        // Redireccion salida estandar de error
+                        // Redireccionar la salida estandar de error
                         if (strcmp(filev[2], "0") != 0) {
                             // Cerrar la salida estándar de error
                             if (close(2) < 0) {
@@ -623,6 +645,7 @@ int main(int argc, char* argv[]) {
                                 perror("Error. Dup failed.\n");
                                 exit(-1);
                             }
+                            // Cerrar los descriptores de fichero
                             if (close(fd[0]) < 0) {
                                 perror("Error. Close failed.\n");
                                 exit(-1);
@@ -637,9 +660,9 @@ int main(int argc, char* argv[]) {
                 }
                 // El último proceso padre
                 if (in_background != 0) {
-                    printf("[%d]\n", getpid());
-                    // signal(SIGCHLD, SIG_IGN);
+                    printf("[%d]\n", getpid());     // Imprimir el PID
                 } else {
+                    // Esperar a que terminen los hijos
                     while (wait(&status2) < 0) {
                         if (status2 < 0) {
                             perror("Error. Child execution failed.\n");
@@ -656,6 +679,5 @@ int main(int argc, char* argv[]) {
         }
 	}
 	
-    // Fin.
     return 0;
 }
