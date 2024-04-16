@@ -78,7 +78,7 @@ void store_command(char ***argvv, char filev[3][64], int in_background, struct c
     (*cmd).argvv = (char ***) calloc((num_commands), sizeof(char **));
     (*cmd).args = (int*) calloc(num_commands, sizeof(int));
 
-    for( int i = 0; i < num_commands; i++) {
+    for( int i = 0; i < num_commands-1; i++) {
         int args= 0;
         while (argvv[i][args] != NULL) {
             args++;
@@ -226,6 +226,7 @@ int main(int argc, char* argv[]) {
                             int op1 = atoi(argvv[0][1]);
                             int op2 = atoi(argvv[0][3]);
                             char result[100];
+                            int err = -1;
                             // Suma
                             if (strcmp(argvv[0][2], "add") == 0) {
                                 char *str_acc = getenv("Acc");
@@ -243,12 +244,14 @@ int main(int argc, char* argv[]) {
                                 }
                                 sprintf(result, "[OK] %d + %d = %d; Acc %d\n", op1, op2, suma, acc);
                                 writeMsg(result, 2);
+                                err = 0;
                             }
                             // Multiplicación
                             else if (strcmp(argvv[0][2], "mul") == 0) {
                                 int multi = op1 * op2;
                                 sprintf(result, "[OK] %d * %d = %d\n", op1, op2, multi);
                                 writeMsg(result, 2);
+                                err = 0;
                             }
                             // División
                             else if (strcmp(argvv[0][2], "div") == 0) {
@@ -261,11 +264,23 @@ int main(int argc, char* argv[]) {
                                     int rest = op1 % op2;
                                     sprintf(result, "[OK] %d / %d = %d; Resto %d\n", op1, op2, div, rest);
                                     writeMsg(result, 2);
+                                    err = 0;
                                 }
                             }
                             // Error
                             else {
                                 writeMsg(msg_error, 1);
+                            }
+                            if (err == 0) {
+                                // Guardar el comando en el historial
+                                store_command(argvv, filev, in_background, &history[tail]);
+                                tail = (tail + 1) % history_size;
+                                if (n_elem < history_size) {
+                                    n_elem++;
+                                } else {
+                                    free_command(&history[head]);
+                                    head = (head + 1) % history_size;
+                                }
                             }
                         } else {
                             writeMsg(msg_error, 1);
@@ -304,6 +319,9 @@ int main(int argc, char* argv[]) {
                                 }
                                 if (strcmp(history[i].filev[1], "0") != 0) {
                                     offset += sprintf(msg+offset, "> %s ", history[i].filev[1]);
+                                }
+                                if (strcmp(history[i].filev[2], "0") != 0) {
+                                    offset += sprintf(msg+offset, "!> %s ", history[i].filev[2]);
                                 }
                                 if (history[i].in_background) {
                                     offset += sprintf(msg+offset, "&");
@@ -351,16 +369,6 @@ int main(int argc, char* argv[]) {
 
             // Comando simple
             else if (command_counter == 1) {
-
-                // Guardar el comando en el historial
-                store_command(argvv, filev, in_background, &history[tail]);
-                tail = (tail + 1) % history_size;
-                if (n_elem < history_size) {
-                    n_elem++;
-                } else {
-                    free_command(&history[head]);
-                    head = (head + 1) % history_size;
-                }
 
                 // Fork
                 int status;
@@ -417,6 +425,17 @@ int main(int argc, char* argv[]) {
                         perror("Error. Execvp failed.\n");
                         exit(-1);
                     }
+
+                    // Guardar el comando en el historial
+                    store_command(argvv, filev, in_background, &history[tail]);
+                    tail = (tail + 1) % history_size;
+                    if (n_elem < history_size) {
+                        n_elem++;
+                    } else {
+                        free_command(&history[head]);
+                        head = (head + 1) % history_size;
+                    }
+                    
                     break;
                 default:    // Padre.
                     if (in_background == 0) {
@@ -620,9 +639,7 @@ int main(int argc, char* argv[]) {
                 if (in_background != 0) {
                     printf("[%d]\n", getpid());
                     // signal(SIGCHLD, SIG_IGN);
-                    // usleep(100000);
                 } else {
-                    // WEXITSTATUS(status)
                     while (wait(&status2) < 0) {
                         if (status2 < 0) {
                             perror("Error. Child execution failed.\n");
