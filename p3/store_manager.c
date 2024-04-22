@@ -14,9 +14,9 @@
 
 
 int main (int argc, const char * argv[]) {
+    /*
     int profits = 0;
     int product_stock [5] = {0};
-
 
     // Output
     printf("Total: %d euros\n", profits);
@@ -26,6 +26,23 @@ int main (int argc, const char * argv[]) {
     printf("  Product 3: %d\n", product_stock[2]);
     printf("  Product 4: %d\n", product_stock[3]);
     printf("  Product 5: %d\n", product_stock[4]);
+    */
 
+    printf("Iniciliazando cola...\n");
+    queue *q = queue_init(5);
+    printf("Añadiendo elementos a la cola...\n");
+    struct element *elem = (struct element *) malloc(sizeof(struct element));
+    elem->product_id = 1;
+    elem->op = 1;
+    elem->units = 1;
+    queue_put(q, elem);
+    print_queue(q);
+    elem = (struct element *) malloc(sizeof(struct element));
+    elem->product_id = 2;
+    elem->op = 2;
+    elem->units = 2;
+    queue_put(q, elem);
+    print_queue(q);
+    
     return 0;
 }
