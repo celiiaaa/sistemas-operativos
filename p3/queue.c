@@ -69,7 +69,7 @@ struct element* queue_get(queue *q) {
         pthread_cond_wait(&cond_empty, &mutex);
     }
     // Extraer el elemento de la cola
-    struct element *element = malloc(sizeof(struct element));
+    struct element *element;
     if (q->head == q->tail) {
         element = q->tail;
         q->head = NULL;
