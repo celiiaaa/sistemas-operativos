@@ -85,7 +85,7 @@ void *productor(void *arg) {
     free(ids);
     free(args);
 
-    return NULL;
+    pthread_exit(NULL);
 }
 
 /* Argumentos del hilo consumidor */
@@ -160,7 +160,7 @@ void *consumidor(void *arg) {
     free(ids);
     free(args);
 
-    return NULL;
+    pthread_exit(NULL);
 }
 
 
