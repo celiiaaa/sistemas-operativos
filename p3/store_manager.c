@@ -7,19 +7,18 @@
 #include <stddef.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include "queue.h"
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "queue.h"
 
+int COSTE[5] = {2, 5, 15, 25, 100};
+int PRECIO[5] = {3, 10, 20, 40, 125};
 
-/* Mutex */
-pthread_mutex_t mutex_prod = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutex_cons = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_prod;
+pthread_cond_t cond_prod;
 
-/* Coste y precio de cada producto */
-int coste[5] = {2, 5, 15, 25, 100};
-int precio[5] = {3, 10, 20, 40, 125};
+int next_op_prod = 0;
 
 /* Argumentos del hilo productor */
 typedef struct arg_productor {
@@ -29,47 +28,59 @@ typedef struct arg_productor {
     struct element *list_operations;
 } arg_productor;
 
-/* Hilo productor */
+/* Función del hilo productor */
 void *productor(void *arg) {
-    //printf("Productor\n");
+    pthread_mutex_lock(&mutex_prod);
+    printf("Productor\n");
     // Obtener los argumentos
     arg_productor *args = (arg_productor *) arg;
-    // Obtener la cola
-    queue *buffer_circular = args->buffer;
-    // Obtener los índices a los elementos a los que tiene que acceder
+    queue *cola_circular = args->buffer;
+    int max_op = args->max_op;
     int *ids = args->ids;
-    // Bucle para leer las operaciones
-    int n_op = 0;
-    //printf("max_op prod: %d\n", args->max_op);
-    while (n_op < args->max_op) {
-        //printf("n_op prod: %d\n", n_op);
-        // Bloquear el mutex del productor
-        pthread_mutex_lock(&mutex_prod);
-        // Crear la operación
-        struct element *operacion;
-        // Reservo memoria
-        operacion = (struct element *) malloc(sizeof(struct element));
+    struct element *lista_operaciones = args->list_operations;
+
+    // Imprimir
+    /* printf("IDS: ");
+    for (int i = 0; i < max_op; i++) {
+        printf("%d ", ids[i]);
+    }
+    printf("\n"); */
+
+    // Realizar las operaciones
+    for (int i = 0; i < max_op; i++) {
+        
+        while (ids[i] != next_op_prod) {
+            pthread_cond_wait(&cond_prod, &mutex_prod);
+        }
+
+        struct element *operacion = malloc(sizeof(struct element));
         if (operacion == NULL) {
-            perror("Error: Reservar memoria para la operación.\n");
+            perror("Error. No se pudo reservar memoria para la operación.\n");
             return NULL;
         }
-        // Asignar los valores de la operación
-        operacion->product_id = args->list_operations[ids[n_op]].product_id;
-        operacion->op = args->list_operations[ids[n_op]].op;
-        operacion->units = args->list_operations[ids[n_op]].units;
+        *operacion = lista_operaciones[ids[i]];
+        printf("Operacion %d\n", ids[i]);
+        printf("\tProducto: %d\n", operacion->product_id);
+        printf("\tOperacion: %d\n", operacion->op);
+        printf("\tUnidades: %d\n", operacion->units);
+
         // Insertar la operación en la cola
-        queue_put(buffer_circular, operacion);
-        n_op++;
-        // free(operacion);
-        // Desbloquear el mutex del productor
+        queue_put(cola_circular, operacion);
+
         // Imprimir la cola
-        // print_queue(buffer_circular);
+        printf("Cola: ");
+        print_queue(cola_circular);
+
+        next_op_prod++;
+        pthread_cond_broadcast(&cond_prod);
         pthread_mutex_unlock(&mutex_prod);
     }
-    // Liberar array de ids    
-    //printf("Fin productor\n");
-    // Finalizar el hilo
-    pthread_exit(NULL);
+
+    // Liberar memoria
+    free(ids);
+    free(args);
+
+    return NULL;
 }
 
 /* Argumentos del hilo consumidor */
@@ -80,203 +91,175 @@ typedef struct arg_consumidor {
     int *product_stock;
 } arg_consumidor;
 
-/* Hilo consumidor */
+/* Función del hilo consumidor */
 void *consumidor(void *arg) {
-    //printf("Consumidor\n");
-    // Obtener los argumentos
-    arg_consumidor *args = (arg_consumidor *) arg;
-    // Obtener los argumentos
-    queue *buffer_circular = args->buffer;
-    int max_op = args->max_op;
-    int *profit = args->profit;
-    int *product_stock = args->product_stock;
-    // Bucle para leer las operaciones
-    int n_op = 0;
-    //printf("max_op cons: %d\n", max_op);
-    while (n_op < max_op) {
-        //printf("n_op cons: %d\n", n_op);
-        // Bloquear el mutex del consumidor
-        pthread_mutex_lock(&mutex_cons);
-        // Extraer la operación de la cola
-        struct element *operacion = queue_get(buffer_circular);
-        // La operación es de compra (PURCHASE)
-        if (operacion->op == 0) {
-            // Actualizar el stock
-            product_stock[operacion->product_id-1] += operacion->units;
-            // printf("CAmbio en el producto: %d y su stock es: %d\n", operacion->product_id-1, product_stock[operacion->product_id-1]);
-            // Actualizar el beneficio
-            *profit -= coste[operacion->product_id-1] * operacion->units;
-        } 
-        // La operación es de venta (SALE)
-        else if (operacion->op == 1) {
-            // Comprobar si hay suficiente stock
-            if (product_stock[operacion->product_id-1] >= operacion->units) {
-                // Actualizar el stock
-                product_stock[operacion->product_id-1] -= operacion->units;
-                // Actualizar el beneficio
-                *profit += precio[operacion->product_id-1] * operacion->units;
-            }
-        }
-        n_op++;
-        free (operacion);
-        // Desbloquear el mutex del consumidor
-        pthread_mutex_unlock(&mutex_cons);
-    }
-    //printf("Fin consumidor\n");
-    
-    // Finalizar el hilo
-    pthread_exit(NULL);
+    printf("Consumidor\n");
+    return NULL;
 }
 
-/* Función principal */
+
 int main (int argc, const char *argv[]) {
     int profit = 0;
     int product_stock[5] = {0, 0, 0, 0, 0};
 
-    // Comprobar el número de argumentos
+    pthread_mutex_init(&mutex_prod, NULL);
+    pthread_cond_init(&cond_prod, NULL);
+
+    // Comprobar el número argumentos
     if (argc != 5) {
-        perror("Error: La operacion es ./store_manager <file> <N_prods> <N_cons> <B_size>.\n");
+        perror("Error. La operacion es ./store_manager <file> <N_prods> <N_cons> <B_size>.\n");
         return -1;
     }
-    // Comprobar los valores de los argumentos
-    if (atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0 || atoi(argv[4]) <= 0) {
-        perror("Error: Valores de los argumentos no válidos.\n");
-        return -1;
-    }
-    int n_productores = atoi(argv[2]);
-    int n_consumidores = atoi(argv[3]);
-    int size_cola = atoi(argv[4]);
-    // printf("argumentos correctos!\n");
-    // Abrir el fichero de entrada
+
+    // Obtener los argumentos y comprobar que son válidos
     FILE *fd;
     if ((fd = fopen(argv[1], "r")) == NULL) {
-        perror("Error: No se pudo abrir el fichero.\n");
+        perror("Error. No se pudo abrir el fichero.\n");
         return -1;
     }
-    // printf("Fichero abierto\n");
-    // Leer el número de operaciones, la primera linea del fichero
+    int n_prod = atoi(argv[2]);
+    if (n_prod < 1) {
+        perror("Error. El numero de productores no es válido.\n");
+        return -1;
+    }
+    int n_cons = atoi(argv[3]);
+    if (n_cons < 1) {
+        perror("Error. El numero de consumidores no es válido.\n");
+        return -1;
+    }
+    int b_size = atoi(argv[4]);
+    if (b_size < 1) {
+        perror("Error. El tamaño del buffer no es válido.\n");
+        return -1;
+    }
+
+    // Leer y cargar los datos del fichero
+
+    // Leer el número de operaciones
     int max_op_file;
     if (fscanf(fd, "%d", &max_op_file) != 1) {
         perror("Error: No se pudo leer el número de operaciones.\n");
         return -1;
     }
-    // printf("Número máx op: %d\n", max_op_file);
     // Reservar memoria para todas las operaciones
-    struct element *list_operations;
-    list_operations = (struct element *) malloc(max_op_file * sizeof(struct element));
-    if (list_operations == NULL) {
+    struct element *lista_operaciones;
+    lista_operaciones = (struct element *) malloc(max_op_file * sizeof(struct element));
+    if (lista_operaciones == NULL) {
         perror("Error: Reservar memoria para las operaciones.\n");
         return -1;
     }
-    // printf("Memoria reservada para las operaciones\n");
     // Almacenar todas las operaciones en la lista
-    int n_read = 0;
-    int i = 0;
-    while (i <= max_op_file) {
-        if (feof(fd)) {
-            break;
-        }
-        int product_id, units;
+    int n = 0;               // número de operaciones leídas
+    while (n < max_op_file) {
+
+        // Leer la linea del fichero
+        int id, uds;
         char str_op[10];
-        if (fscanf(fd, "%d %s %d", &product_id, str_op, &units) != 3) {
+        if (fscanf(fd, "%d %s %d", &id, str_op, &uds) != 3) {
             break;
         }
 
-        // printf("La linea leida es: %d %s %d\n", product_id, str_op, units);
+        printf("Linea leida: %d %s %d\n", id, str_op, uds);
 
-        list_operations[i].product_id = product_id;
-        // Operacion
+        // Almacenar la operación en la lista
+        lista_operaciones[n].product_id = id;
         if (strcmp(str_op, "PURCHASE") == 0) {
-            list_operations[i].op = 0;
-        } else  if (strcmp(str_op, "SALE") == 0) {
-            list_operations[i].op = 1;
+            lista_operaciones[n].op = 0;
+        } else if (strcmp(str_op, "SALE") == 0) {
+            lista_operaciones[n].op = 1;
         } else {
             perror("Error: Operación no válida.\n");
             return -1;
         }
+        lista_operaciones[n].units = uds;
 
-        // printf("La linea guardada es: %d %d %d\n", list_operations[i].product_id, list_operations[i].op, list_operations[i].units);
+        printf("Linea guardada: %d %d %d\n", lista_operaciones[n].product_id, lista_operaciones[n].op, lista_operaciones[n].units);
 
-        list_operations[i].units = units;
-        n_read++;
-
-        i++;
+        n++;
     }
-    // printf("Operaciones leídas y almacenadas en el array\n");
-    // Comprobar si el numero de operaciones es correcto
-    if (n_read < max_op_file) {
-        perror("Error: El número de operaciones no es válido.\n");
+
+    // Comprobar que no haya menos operacion
+    if (n < max_op_file) {
+        perror("Error: Número de operaciones leidas < máximo de operaciones indicado.\n");
+        free(lista_operaciones);
         return -1;
     }
-    // Inicializar la cola
-    queue *buffer;
-    buffer = queue_init(size_cola);
-    if (buffer == NULL) {
+
+    // Inicializar la cola circular
+    struct queue *cola_circular = queue_init(b_size);
+    if (cola_circular == NULL) {
+        perror("Error. No se pudo inicializar la cola.\n");
         return -1;
     }
-    // printf("Cola inicializada\n");
 
-    // Crear los productores
-    pthread_t productores[n_productores];
-    // Repartir las operaciones entre los productores
-    int n_op = max_op_file / n_productores;
-    for (int i=0; i<n_productores; i++) {
-        int *ids = malloc(n_op * sizeof(int));
-        if (ids == NULL) {
-            perror("Error: No se pudo reservar memoria para los ids.\n");
+    // Productores y consumidores
+    pthread_t productores[n_prod];
+    // pthread_t consumidores[n_cons];
+
+    // Reparto equitativo de las operaciones entre los productores
+    int n_op_prod = max_op_file / n_prod;
+    int op_rest_prod = max_op_file % n_prod;
+    
+    int op_actual = 0;
+    for (int i = 0; i < n_prod; i++) {
+        int n_op_actual = n_op_prod;
+        if (op_rest_prod > 0) {
+            n_op_actual++;
+            op_rest_prod--;
+        }
+
+        printf("Productor %d realizará %d operacion(es)\n", i + 1, n_op_actual);
+
+        // Argumentos para el hilo productor
+        arg_productor *arg = malloc(sizeof(arg_productor));
+        if (arg == NULL) {
+            perror("Error. No se pudo reservar memoria para los argumentos.\n");
             return -1;
         }
-        for (int j=0; j<n_op; j++) {
-            ids[j] = i * n_op + j;
+        int *ids = malloc(n_op_actual * sizeof(int));
+        if (ids == NULL) {
+            perror("Error. No se pudo reservar memoria para los ids.\n");
+            return -1;
         }
-        arg_productor *args = malloc(sizeof(arg_productor));
-        args->buffer = buffer;
-        args->ids = ids;
-        args->max_op = n_op;
-        args->list_operations = list_operations;
-        pthread_create(&productores[i], NULL, productor, (void *) args);
+        for (int j = 0; j < n_op_actual; j++) {
+            ids[j] = op_actual;
+            op_actual++;
+        }
+        arg->ids = ids;
+        arg->buffer = cola_circular;
+        arg->max_op = n_op_actual;
+        arg->list_operations = lista_operaciones;
+
+        // Crear hilo productor
+        if (pthread_create(&productores[i], NULL, &productor, arg) != 0) {
+            perror("Error. No se pudo crear el hilo productor.\n");
+            return -1;
+        }
     }
 
-    // printf("Productores creados\n");
-    
-    // Crear los consumidores
-    pthread_t consumidores[n_consumidores];
-    // Repartir las operaciones entre los consumidores
-    n_op = max_op_file / n_consumidores;
-    for (int i=0; i<n_consumidores; i++) {
-        arg_consumidor *args = malloc(sizeof(arg_consumidor));
-        args->buffer = buffer;
-        args->max_op = n_op;
-        args->profit = &profit;
-        args->product_stock = product_stock;
-        pthread_create(&consumidores[i], NULL, consumidor, (void *) args);
+    // Esperar a que terminen los hilos productores
+    for (int i = 0; i < n_prod; i++) {
+        if (pthread_join(productores[i], NULL) != 0) {
+            perror("Error. No se pudo esperar al hilo productor.\n");
+            return -1;
+        }
     }
 
-    // printf("Consumidores creados\n");
-    
-    // Esperar a que terminen los productores
-    for (int i=0; i<n_productores; i++) {
-        pthread_join(productores[i], NULL);
-    }
-    // printf("Productores fin\n");
-
-    // Esperar a que terminen los consumidores
-    for (int i=0; i<n_consumidores; i++) {
-        pthread_join(consumidores[i], NULL);
-    }
-    // printf("Consumidores fin\n");
 
     // Output
     printf("Total: %d euros\n", profit);
-    printf("Stock:\n");
-    for (int i=0; i<5; i++) {
-        printf("Producto %d: %d uds\n", i+1, product_stock[i]);
+    printf("Stock: \n");
+    for (int i = 0; i < 5; i++) {
+        printf("\tProduct %d: %d\n", i+1, product_stock[i]);
     }
 
     // Liberar memoria
-    free(list_operations);
-    queue_destroy(buffer);
-    fclose(fd);
+    free(lista_operaciones);
+    free(cola_circular);
+    /* queue_destroy(cola_circular); */
+
+    pthread_mutex_destroy(&mutex_prod);
+    pthread_cond_destroy(&cond_prod);
 
     return 0;
 }

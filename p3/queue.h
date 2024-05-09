@@ -7,7 +7,7 @@
 struct element {
     int product_id;     /* Identificador del producto */
     int op;             /* Tipo de operación */
-    int units;          /*Número de unidades implicadas en la operación */
+    int units;          /* Número de unidades implicadas en la operación */
 
     struct element *next;       /* Puntero al siguiente elemento */
     struct element *prev;       /* Puntero al elemento anterior */
