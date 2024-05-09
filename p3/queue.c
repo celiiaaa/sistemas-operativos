@@ -112,14 +112,6 @@ int queue_full(queue *q) {
 
 /* Elimina la cola y libera recursos */
 int queue_destroy(queue *q) {
-    struct element *current = q->head;
-    struct element *next;
-    // Liberar memoria de los elementos
-    while (current != NULL) {
-        next = current->next;
-        free(current);
-        current = next;
-    }
     // Liberar memoria de la cola
     free(q);
     // Destruir el mutex y las variables de condición
