@@ -35,7 +35,7 @@ typedef struct arg_productor {
 /* Función del hilo productor */
 void *productor(void *arg) {
     pthread_mutex_lock(&mutex_prod);
-    printf("Productor\n");
+    // printf("Productor\n");
     // Obtener los argumentos
     arg_productor *args = (arg_productor *) arg;
     queue *cola_circular = args->buffer;
@@ -72,13 +72,14 @@ void *productor(void *arg) {
         queue_put(cola_circular, operacion);
 
         // Imprimir la cola
-        printf("Cola: ");
-        print_queue(cola_circular);
+        // printf("Cola: ");
+        // print_queue(cola_circular);
 
         next_op_prod++;
         pthread_cond_broadcast(&cond_prod);
-        pthread_mutex_unlock(&mutex_prod);
     }
+
+    pthread_mutex_unlock(&mutex_prod);
 
     // Liberar memoria
     free(ids);
@@ -99,7 +100,7 @@ typedef struct arg_consumidor {
 /* Función del hilo consumidor */
 void *consumidor(void *arg) {
     pthread_mutex_lock(&mutex_cons);
-    printf("Consumidor\n");
+    // printf("Consumidor\n");
 
     // Obtener los argumentos
     arg_consumidor *args = (arg_consumidor *) arg;
@@ -120,7 +121,7 @@ void *consumidor(void *arg) {
     for (int i = 0; i < max_op; i++) {
         
         while (ids[i] != next_op_cons) {
-            pthread_cond_wait(&cond_prod, &mutex_cons);
+            pthread_cond_wait(&cond_cons, &mutex_cons);
         }
 
         // Obtener la operación de la cola
@@ -146,13 +147,12 @@ void *consumidor(void *arg) {
             product_stock[operacion->product_id-1] -= operacion->units;
         }
 
-        printf("Cola: ");
-        print_queue(cola_circular);
+        // printf("Cola: ");
+        // print_queue(cola_circular);
 
         next_op_cons++;
         pthread_cond_broadcast(&cond_cons);
     }
-
 
     pthread_mutex_unlock(&mutex_cons);
 
@@ -171,6 +171,7 @@ int main (int argc, const char *argv[]) {
     pthread_mutex_init(&mutex_prod, NULL);
     pthread_mutex_init(&mutex_cons, NULL);
     pthread_cond_init(&cond_prod, NULL);
+    pthread_cond_init(&cond_cons, NULL);
 
     // Comprobar el número argumentos
     if (argc != 5) {
@@ -226,7 +227,7 @@ int main (int argc, const char *argv[]) {
             break;
         }
 
-        printf("Linea leida: %d %s %d\n", id, str_op, uds);
+        // printf("Linea leida: %d %s %d\n", id, str_op, uds);
 
         // Almacenar la operación en la lista
         lista_operaciones[n].product_id = id;
@@ -240,7 +241,7 @@ int main (int argc, const char *argv[]) {
         }
         lista_operaciones[n].units = uds;
 
-        printf("Linea guardada: %d %d %d\n", lista_operaciones[n].product_id, lista_operaciones[n].op, lista_operaciones[n].units);
+        // printf("Linea guardada: %d %d %d\n", lista_operaciones[n].product_id, lista_operaciones[n].op, lista_operaciones[n].units);
 
         n++;
     }
@@ -277,7 +278,7 @@ int main (int argc, const char *argv[]) {
             op_rest_prod--;
         }
 
-        printf("Productor %d realizará %d operacion(es)\n", i + 1, n_op_actual);
+        // printf("Productor %d realizará %d operacion(es)\n", i + 1, n_op_actual);
 
         // Argumentos para el hilo productor
         arg_productor *arg = malloc(sizeof(arg_productor));
@@ -318,7 +319,7 @@ int main (int argc, const char *argv[]) {
             op_rest_cons--;
         }
 
-        printf("Consumidor %d realizará %d operacion(es)\n", i + 1, n_op_actual);
+        // printf("Consumidor %d realizará %d operacion(es)\n", i + 1, n_op_actual);
 
         // Argumentos para el hilo consumidor
         arg_consumidor *arg = malloc(sizeof(arg_consumidor));
@@ -379,6 +380,7 @@ int main (int argc, const char *argv[]) {
     pthread_mutex_destroy(&mutex_prod);
     pthread_mutex_destroy(&mutex_cons);
     pthread_cond_destroy(&cond_prod);
+    pthread_cond_destroy(&cond_cons);
 
     return 0;
 }
