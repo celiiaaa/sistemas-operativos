@@ -6,7 +6,7 @@
 
 Este documento recoge una descripción de todo lo desarrollado en Sistemas Operativos.
 
-# Indice
+## Indice
 
 - [Práctica 1. Llamadas al Sistema Operativo](#práctica-1-llamadas-al-sistema-operativo)
     - [Mywc](#mywc)
@@ -17,6 +17,12 @@ Este documento recoge una descripción de todo lo desarrollado en Sistemas Opera
     - [Secuencia de mandatos](#secuencia-de-mandatos)
     - [Mycalc](#mycalc)
     - [Myhistory](#myhistory)
+- [Práctica 3. Programación multi-hilo](#práctica-3-programación-multihilo)
+    - [Cola circular](#cola-circular)
+    - [Función principal](#función-principal)
+    - [Productor](#productor)
+    - [Consumidor](#consumidor)
+    - [Batería de pruebas](#batería-de-pruebas)
 
 ---
 ---
@@ -279,7 +285,7 @@ Esta última función, `print_queue`, se ha implementado de forma complementaria
 Elemento <id> : <producto_id> <op> <units>
 ```
 
-#### Función principal
+### Función principal
 
 Esta parte corresponde a la implementación del hilo principal pedido. Este programa consiste en un sistema multi–hilo capaz de gestionar las operaciones de una tienda y calcular los beneficios y el *stock* en un entorno de concurrencia. En primer lugar, inicializa el beneficio total obtenido, el array que almacena el *stock* de cada producto, los *mutex* y las variables condicionales, que son utilizados para garantizar la concurrencia y la sincronización de este sistema.
 
@@ -299,7 +305,7 @@ Posteriormente, el programa procede distribuir equitativativamente las operacion
 
 Una vez que todos los hilos han concluido su tarea, se procede a calcular el beneficio total obtenido y se muestra el stock actualizado de cada producto en la tienda. Finalmente, se liberan todos los recursos utilizados y se retorna el valor 0 para indicar la finalización del programa llevada con éxito.
 
-#### Productor
+### Productor
 
 El hilo productor se encarga de generar las operaciones, agregar las operaciones de forma ordenada para que posteriormente se lleven a cabo por un hilo consumidor. Los argumentos que este requiere son los siguientes: el buffer circular, el número máximo de operaciones que tiene que agregar en la cola, un array con los ids de las operaciones (las posiciones de todas las operaciones que ocupan en la lista de operaciones) y la lista de operaciones completa.
 
@@ -307,7 +313,7 @@ La función comienza con la obtención en variables locales de los argumentos pa
 
 Además, se utiliza el *mutex* para que solo se realice esta función por un único hilo para evitar problemas de condiciones de carrera. Finalmente, esta función libera los recursos utilizados y finaliza la ejecución del hilo con *pthread_exit*.
 
-#### Consumidor
+### Consumidor
 
 Por otra parte, el hilo consumidor se encarga de extraer las operaciones de la cola, para llevar a cabo las operaciones que previamente han sido agregadas. Los argumentos que este requiere son los siguientes: el buffer circular, el número máximo de operaciones que tiene que agregar en la cola, un *array* con los *ids* de las operaciones (las posiciones de todas las operaciones que ocupan en la lista de operaciones), un puntero al beneficio total y otro al *stock* de los productos.
 
@@ -315,7 +321,7 @@ Esta función es muy parecida a la del productor. Comienza obteniendo los argume
 
 Al igual que el anterior, el proceso se realiza bajo el orden de extracción de las operaciones, para ello se sincroniza mediante un *mutex* y una variable condición que pone en espera a los hilos cuyas operaciones tengan un índice distinto al actual. Además, se utiliza el *mutex* para que solo se realice esta función por un único hilo para evitar problemas de condiciones de carrera. Finalmente, esta función libera los recursos utilizados y finaliza la ejecución del hilo con *pthread_exit*.
 
-#### Batería de pruebas
+### Batería de pruebas
 
 En esta sección se recogen todas las pruebas llevadas a cabo para realizar la comprobación de este programa.
 
